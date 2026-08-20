@@ -17,5 +17,5 @@
 
 <resources>
   <!--  Required by F-Droid-->
-  <string name="app_name" translatable="false">HMX IDE</string>
+  <string name="app_name" translatable="false">VibeIDE</string>
 </resources>
