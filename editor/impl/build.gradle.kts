@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.common.utilcode)
     
     implementation(libs.google.material)
+    implementation(libs.google.gson)
 
     implementation(projects.core.actions)
     implementation(projects.core.common)

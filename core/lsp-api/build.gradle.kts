@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.common.kotlin)
     implementation(libs.common.utilcode)
     implementation(libs.google.material)
+    implementation(libs.google.gson)
     
     api(projects.core.projects)
     api(projects.core.lspModels)
