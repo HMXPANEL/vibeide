@@ -24,6 +24,7 @@ import com.hmx.ide.utils.DialogUtils
 import com.hmx.ide.utils.Environment
 import com.hmx.ide.utils.flashError
 import com.hmx.ide.utils.flashSuccess
+import com.hmx.ide.web.WebProjectTemplates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -90,42 +91,44 @@ class MainFragment : BaseFragment() {
     builder.setPositiveButton(string.create) { dialog, _ ->
       dialog.dismiss()
       val name = binding.name.editText?.text?.toString()?.trim().orEmpty()
-      doCreateProject(name)
+      if (name.isBlank()) {
+        flashError(string.msg_empty_project_name)
+        return@setPositiveButton
+      }
+      val dir = File(Environment.PROJECTS_DIR, name)
+      if (dir.exists()) {
+        flashError(string.msg_project_already_exists)
+        return@setPositiveButton
+      }
+      showTemplateChooser(name)
     }
     builder.setNegativeButton(android.R.string.cancel, null)
     builder.show()
   }
 
-  private fun doCreateProject(name: String) {
-    if (name.isBlank()) {
-      flashError(string.msg_empty_project_name)
-      return
-    }
+  private fun showTemplateChooser(name: String) {
+    val templates = WebProjectTemplates.all
+    DialogUtils.newMaterialDialogBuilder(requireContext())
+      .setTitle(string.title_choose_template)
+      .setItems(templates.map { it.name }.toTypedArray()) { dialog, which ->
+        dialog.dismiss()
+        doCreateProject(name, templates[which])
+      }
+      .setNegativeButton(android.R.string.cancel, null)
+      .show()
+  }
 
+  private fun doCreateProject(name: String, template: WebProjectTemplates.Template) {
     val dir = File(Environment.PROJECTS_DIR, name)
-    if (dir.exists()) {
-      flashError(string.msg_project_already_exists)
-      return
-    }
 
     viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
       runCatching {
         dir.mkdirs()
-        File(dir, "index.html").writeText(
-          """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>$name</title>
-  <style>body { font-family: system-ui, sans-serif; padding: 2rem; }</style>
-</head>
-<body>
-  <h1>Hello from $name!</h1>
-</body>
-</html>
-"""
-        )
+        template.files(name).forEach { (path, content) ->
+          val file = File(dir, path)
+          file.parentFile?.mkdirs()
+          file.writeText(content)
+        }
       }.onFailure { flashError(string.msg_project_create_failed) }
 
       withContext(Dispatchers.Main) {

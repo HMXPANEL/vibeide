@@ -414,6 +414,8 @@ constants, `IdeShellEnvironment` Gradle/JDK setup), `IJdkDistributionProvider`,
   `java.net.ServerSocket`, no deps) + `PreviewActivity` (WebView, JS enabled, console
   bridge, refresh/back/close toolbar) + `PreviewProjectAction` (editor toolbar).
 - `core:projects` `WebProject` model already in place (plain web-file directory).
-- Create-project scaffolds `index.html` per project.
-- Remaining: tree-sitter HTML/CSS/JS grammars (native deps, deferred), web template
-  gallery, VibeIDE branding (app_name + icon).
+- Create-project now offers a template gallery (`WebProjectTemplates`: Blank / Basic /
+  Todo) instead of a single inline scaffold.
+- VibeIDE branding: `app_name` -> "VibeIDE" (launcher label, splash). Icon and full
+  string rebrand deferred.
+- Remaining: tree-sitter HTML/CSS/JS grammars (native deps, deferred).
