@@ -178,3 +178,21 @@ found and fixed these real dangling references:
 
 Note: bash tool output redacts some identifiers (shown as `n`); verify files with
 Read/grep tools, not trust mangled shell output.
+
+## 12. Checkpoint-03 resource/manifest cleanup (2026-08)
+
+- AndroidManifest verified already clean: no FOREGROUND_SERVICE / MANAGE_EXTERNAL_STORAGE /
+  QUERY_ALL_PACKAGES. Kept INTERNET, ACCESS_NETWORK_STATE, READ/WRITE_EXTERNAL_STORAGE
+  (project dir lives on external storage), POST_NOTIFICATIONS (crash notifier),
+  SYSTEM_ALERT_WINDOW (crash overlay). `@mipmap/ic_launcher`, `@xml/network_security_config`,
+  `@xml/ide_file_provider_paths`, `@string/app_name` all resolve.
+- Deleted orphan `core/app/src/main/res/layout/activity_remote_build.xml` (RemoteBuildActivity gone).
+- Stripped `tools:showIn="@layout/layout_run_tasks_category"` from `layout_divider_horizontal.xml`.
+- Removed orphan strings: `title_remote_build`, `title_preview_layout`, `msg_emptyview_applogs`,
+  `err_selected_variant_not_found`, `msg_experimental_flavor`, `restype_drawable/layout/menu/other`,
+  `title_choose_application`, `<!-- Templates -->` comment.
+- Removed dead `more_options` button (referenced nonexistent `@drawable/ic_more_vert_black_20dp`,
+  had no code listener) from `layout_find_in_file.xml`.
+- Full defined-vs-referenced resource sweep (all res types, code + XML): no real missing refs.
+  Remaining scan hits are lib-provided (`material_on_background_disabled` = Material 1.11.0) or
+  dotted-style name-format artifacts (`Theme.AndroidIDE.BlueWave` ↔ `R.style.Theme_AndroidIDE_BlueWave`).
