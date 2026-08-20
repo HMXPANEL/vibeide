@@ -2,8 +2,9 @@ package com.hmx.webide.editor.language
 
 import com.hmx.webide.editor.language.utils.CommonSymbolPairs
 import io.github.rosemoe.sora.lang.EmptyLanguage
-import io.github.rosemoe.sora.lang.Language.INTERRUPTION_LEVEL_NORMAL
+import io.github.rosemoe.sora.lang.Language.INTERRUPTION_LEVEL_STRONG
 import io.github.rosemoe.sora.lang.analysis.AnalyzeManager
+import io.github.rosemoe.sora.lang.smartEnter.NewlineHandler
 import io.github.rosemoe.sora.widget.SymbolPairMatch
 
 /**
@@ -19,7 +20,9 @@ class WebLanguage(val type: String) : IDELanguage() {
 
   override fun getAnalyzeManager(): AnalyzeManager = EmptyLanguage.EmptyAnalyzeManager()
 
-  override fun getInterruptionLevel(): Int = INTERRUPTION_LEVEL_NORMAL
+  override fun getInterruptionLevel(): Int = INTERRUPTION_LEVEL_STRONG
+
+  override fun getNewlineHandlers(): Array<NewlineHandler>? = null
 
   override fun getSymbolPairs(): SymbolPairMatch = CommonSymbolPairs()
 }
