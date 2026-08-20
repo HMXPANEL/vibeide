@@ -29,6 +29,7 @@ import com.hmx.ide.actions.editor.PasteAction
 import com.hmx.ide.actions.editor.SelectAllAction
 import com.hmx.ide.actions.editor.AIChatAction
 import com.hmx.ide.actions.editor.CloseProjectAction
+import com.hmx.ide.actions.editor.PreviewProjectAction
 import com.hmx.ide.actions.etc.FindActionMenu
 import com.hmx.ide.actions.etc.ReloadColorSchemesAction
 import com.hmx.ide.actions.file.CloseAllFilesAction
@@ -66,6 +67,7 @@ class EditorActivityActions {
       registry.registerAction(SaveFileAction(context, order++))
       registry.registerAction(FindActionMenu(context, order++))
       registry.registerAction(ReloadColorSchemesAction(context, order++))
+      registry.registerAction(PreviewProjectAction(context, order++))
       registry.registerAction(AIChatAction(context, order++))
       registry.registerAction(CloseProjectAction(context, order++))
 

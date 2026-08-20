@@ -648,4 +648,5 @@
   <string name="msg_empty_project_name">Project name cannot be empty</string>
   <string name="msg_project_already_exists">A project with this name already exists</string>
   <string name="msg_project_create_failed">Failed to create project</string>
+  <string name="action_preview">Preview</string>
 </resources>

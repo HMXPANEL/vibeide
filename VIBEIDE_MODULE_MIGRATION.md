@@ -407,3 +407,13 @@ constants, `IdeShellEnvironment` Gradle/JDK setup), `IJdkDistributionProvider`,
    SYSTEM_ALERT_WINDOW for crash overlay).
 4. **checkpoint-04-vibeide-shell** — introduce web project model, web templates,
    HTML/CSS/JS editor languages, live web preview, VibeIDE branding.
+
+#### checkpoint-04 progress (2026-08)
+
+- Live web preview shipped: `WebPreviewServer` (static HTTP server, loopback-only,
+  `java.net.ServerSocket`, no deps) + `PreviewActivity` (WebView, JS enabled, console
+  bridge, refresh/back/close toolbar) + `PreviewProjectAction` (editor toolbar).
+- `core:projects` `WebProject` model already in place (plain web-file directory).
+- Create-project scaffolds `index.html` per project.
+- Remaining: tree-sitter HTML/CSS/JS grammars (native deps, deferred), web template
+  gallery, VibeIDE branding (app_name + icon).

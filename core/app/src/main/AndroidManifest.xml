@@ -68,6 +68,12 @@
       android:name=".activities.aichat.AIChatActivity"
       android:theme="@style/Theme.AndroidIDE" />
 
+    <activity
+      android:configChanges="orientation|screenSize|keyboardHidden"
+      android:exported="false"
+      android:name=".activities.PreviewActivity"
+      android:theme="@style/Theme.AndroidIDE" />
+
     <provider
       android:authorities="com.hmx.ide.documents"
       android:exported="true"
