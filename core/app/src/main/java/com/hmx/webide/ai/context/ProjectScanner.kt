@@ -40,7 +40,8 @@ object ProjectScanner {
       if (total > 100 && count % (total / 10) == 0) {
         onProgress?.invoke("Scanning... ${(count * 100 / total)}%")
       }
-      when (val ext = file.extension.lowercase()) {
+      val ext = file.extension.lowercase()
+      when (ext) {
         "html", "htm" -> htmlFiles.add(file)
         "css" -> cssFiles.add(file)
         "js", "mjs", "cjs" -> jsFiles.add(file)

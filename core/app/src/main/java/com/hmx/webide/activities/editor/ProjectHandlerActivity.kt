@@ -72,7 +72,7 @@ abstract class ProjectHandlerActivity : BaseEditorActivity() {
     doSetStatus(status, gravity)
   }
 
-  protected open fun createFindInProjectDialog(): AlertDialog? {
+  open fun createFindInProjectDialog(): AlertDialog? {
     val manager = ProjectManagerImpl.getInstance()
     if (manager.getWorkspace() == null) {
       log.warn("No root project model found.")
@@ -178,3 +178,6 @@ abstract class ProjectHandlerActivity : BaseEditorActivity() {
     return mSearchingProgress
   }
 }
+
+val android.app.Activity.findInProjectDialog: AlertDialog?
+  get() = (this as? ProjectHandlerActivity)?.createFindInProjectDialog()

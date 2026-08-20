@@ -39,7 +39,7 @@ import java.io.File
  *
  * @author Akash Yadav
  */
-class NewFileAction(context: Context, override val order: Int) :
+class NewFileAction(private val context: Context, override val order: Int) :
   BaseDirNodeAction(
     context = context,
     labelRes = R.string.new_file,

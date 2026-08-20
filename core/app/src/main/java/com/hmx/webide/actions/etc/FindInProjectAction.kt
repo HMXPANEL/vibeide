@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat
 import com.hmx.webide.actions.ActionData
 import com.hmx.webide.actions.EditorActivityAction
 import com.hmx.webide.actions.markInvisible
+import com.hmx.webide.activities.editor.findInProjectDialog
 import com.hmx.webide.projects.IProjectManager
 import com.hmx.webide.resources.R
 
