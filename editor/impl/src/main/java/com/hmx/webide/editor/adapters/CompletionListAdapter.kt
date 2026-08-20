@@ -121,5 +121,4 @@ class CompletionListAdapter : EditorCompletionAdapter() {
 
     binding.root.background = gd
   }
-
-  private fun setItemBackground(binding: LayoutCompletionItemBinding, isCurrent: Boolean) {
+}
