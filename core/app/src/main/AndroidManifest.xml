@@ -75,7 +75,7 @@
       android:theme="@style/Theme.AndroidIDE" />
 
     <provider
-      android:authorities="com.hmx.ide.documents"
+      android:authorities="com.hmx.webide.documents"
       android:exported="true"
       android:grantUriPermissions="true"
       android:name=".provider.IDEDocumentsProvider"

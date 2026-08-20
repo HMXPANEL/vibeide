@@ -75,7 +75,7 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <com.hmx.ide.ui.BottomInsetHeightDistributor
+        <com.hmx.webide.ui.BottomInsetHeightDistributor
           android:id="@+id/height_distributor"
           android:layout_width="0dp"
           android:layout_height="wrap_content"

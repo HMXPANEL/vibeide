@@ -3,6 +3,7 @@ name: android-build
 on:
   push:
     branches:
+      - main
       - dev
   workflow_dispatch:
     inputs:
@@ -75,7 +76,7 @@ jobs:
             -alias hmxide \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass android -keypass android \
-            -dname "CN=HMX IDE,O=HMX,C=US"
+            -dname "CN=VibeIDE,O=HMX,C=US"
           {
             echo "IDE_SIGNING_ALIAS=hmxide"
             echo "IDE_SIGNING_STORE_PASS=android"

@@ -39,7 +39,7 @@
 
     <androidx.fragment.app.FragmentContainerView
       android:id="@+id/main"
-      android:name="com.hmx.ide.fragments.MainFragment"
+      android:name="com.hmx.webide.fragments.MainFragment"
       android:layout_width="match_parent"
       android:layout_height="match_parent" />
 

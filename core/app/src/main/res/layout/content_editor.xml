@@ -31,7 +31,7 @@
     android:fitsSystemWindows="false"
     app:layout_behavior="com.google.android.material.appbar.AppBarLayout$Behavior">
 
-    <com.hmx.ide.ui.ExtendedMenuToolbar
+    <com.hmx.webide.ui.ExtendedMenuToolbar
       android:id="@+id/editor_toolbar"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
@@ -101,7 +101,7 @@
 
   </ViewFlipper>
 
-  <com.hmx.ide.ui.EditorBottomSheet
+  <com.hmx.webide.ui.EditorBottomSheet
     android:id="@+id/bottom_sheet"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
