@@ -25,4 +25,6 @@ class WebLanguage(val type: String) : IDELanguage() {
   override fun getNewlineHandlers(): Array<NewlineHandler>? = null
 
   override fun getSymbolPairs(): SymbolPairMatch = CommonSymbolPairs()
+
+  override fun destroy() = Unit
 }
