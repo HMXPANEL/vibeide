@@ -32,6 +32,7 @@ import com.hmx.webide.editor.api.IEditor
 import com.hmx.webide.editor.api.ILspEditor
 import com.hmx.webide.editor.language.IDELanguage
 import com.hmx.webide.editor.language.WebLanguageProvider
+import com.hmx.webide.editor.language.treesitter.TreeSitterLanguage
 import com.hmx.webide.editor.language.treesitter.TreeSitterLanguageProvider
 import com.hmx.webide.editor.schemes.IDEColorScheme
 import com.hmx.webide.editor.schemes.IDEColorSchemeProvider
