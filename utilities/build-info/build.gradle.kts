@@ -40,7 +40,7 @@ val buildInfoGenDir: Provider<Directory> = project.layout.buildDirectory.dir("ge
 sourceSets { getByName("main").java.srcDir(buildInfoGenDir) }
 
 tasks.create("generateBuildInfo") {
-  val buildInfoPath = "com/hmx/ide/buildinfo/BuildInfo.java"
+  val buildInfoPath = "com/hmx/webide/buildinfo/BuildInfo.java"
   val buildInfo = buildInfoGenDir.get().file(buildInfoPath)
   val buildInfoIn = project.file("src/main/java/${buildInfoPath}.in")
 
