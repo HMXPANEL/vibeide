@@ -17,7 +17,6 @@
 
 package com.hmx.webide.projects
 
-import com.hmx.webide.lookup.Lookup
 import com.hmx.webide.utils.ServiceLoader
 import java.io.File
 
@@ -31,9 +30,6 @@ interface IProjectManager {
   companion object {
 
     private var projectManager: IProjectManager? = null
-
-    @JvmField
-    val KEY_WORKSPACE = Lookup.newKey(IWorkspace::class.java)
 
     /**
      * Get the project manager instance.
