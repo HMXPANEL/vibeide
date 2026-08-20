@@ -1,7 +1,10 @@
 package com.hmx.webide.editor.language
 
+import com.hmx.webide.editor.language.utils.CommonSymbolPairs
 import io.github.rosemoe.sora.lang.EmptyLanguage
+import io.github.rosemoe.sora.lang.Language.INTERRUPTION_LEVEL_NORMAL
 import io.github.rosemoe.sora.lang.analysis.AnalyzeManager
+import io.github.rosemoe.sora.widget.SymbolPairMatch
 
 /**
  * A lightweight [IDELanguage] for web source files (HTML, CSS, JavaScript, Markdown).
@@ -17,4 +20,6 @@ class WebLanguage(val type: String) : IDELanguage() {
   override fun getAnalyzeManager(): AnalyzeManager = EmptyLanguage.EmptyAnalyzeManager()
 
   override fun getInterruptionLevel(): Int = INTERRUPTION_LEVEL_NORMAL
+
+  override fun getSymbolPairs(): SymbolPairMatch = CommonSymbolPairs()
 }
