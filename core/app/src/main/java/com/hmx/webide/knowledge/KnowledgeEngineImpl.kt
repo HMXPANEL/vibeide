@@ -21,7 +21,7 @@ import java.io.File
 
 object KnowledgeEngineImpl : KnowledgeEngine {
 
-  private const val WEB_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "json", "md", "txt", "xml")
+  private const val WEB_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "cjs", "json", "md", "txt", "xml")
 
   private val index = SymbolIndex(maxSize = 5000)
   private var indexer = IncrementalIndexer(index, rootDir = { rootDir })
@@ -73,21 +73,16 @@ object KnowledgeEngineImpl : KnowledgeEngine {
     val scan = ProjectScanner.scan(root)
     val analysis = ProjectAnalyzer.analyze(root, scan)
     unifiedIndex = UnifiedIndex(symbols = index, project = analysis)
-    val modules = analysis.context.modules.map { name ->
-      ModuleModel(name = name, basePath = "$root/$name", files = emptyList())
-    }
     _currentProject = ProjectModel(
       projectDir = root.absolutePath,
-      modules = modules,
+      modules = analysis.context.dirs.map { name -> ModuleModel(name = name, basePath = "$root/$name", files = emptyList()) },
     )
     for (file in scan.allSourceFiles) {
       _fileReadCount++
       val content = runCatching { file.readText() }.getOrNull() ?: continue
       val model = FileParser.parse(file, root, content)
-      if (model.packageName != null) {
-        for (decl in model.declarations) {
-          index.add(decl.fqn, SymbolLocation(file.absolutePath, decl.line, decl.column), file.absolutePath, decl)
-        }
+      for (decl in model.declarations) {
+        index.add(decl.fqn, SymbolLocation(file.absolutePath, decl.line, decl.column), file.absolutePath, decl)
       }
       index.addFile(file.relativeTo(root).path, model)
     }

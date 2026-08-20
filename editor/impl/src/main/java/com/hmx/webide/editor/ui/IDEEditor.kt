@@ -31,6 +31,7 @@ import com.hmx.webide.editor.adapters.CompletionListAdapter
 import com.hmx.webide.editor.api.IEditor
 import com.hmx.webide.editor.api.ILspEditor
 import com.hmx.webide.editor.language.IDELanguage
+import com.hmx.webide.editor.language.WebLanguageProvider
 import com.hmx.webide.editor.language.treesitter.TreeSitterLanguageProvider
 import com.hmx.webide.editor.schemes.IDEColorScheme
 import com.hmx.webide.editor.schemes.IDEColorSchemeProvider
@@ -635,6 +636,11 @@ open class IDEEditor @JvmOverloads constructor(
     }
 
     // 3 -> No ANTLR4 lexer-based languages remain; return an empty language
+    if (WebLanguageProvider.hasLanguage(file)) {
+      callback(WebLanguageProvider.forFile(file))
+      return
+    }
+
     callback(EmptyLanguage())
   }
 

@@ -8,50 +8,42 @@ object PromptBuilder {
     val ctx = index.context
     val sb = StringBuilder()
 
-    sb.appendLine("You are an AI coding assistant for an Android project.")
+    sb.appendLine("You are an AI coding assistant for a web project.")
     sb.appendLine()
 
     sb.appendLine("=== PROJECT STATUS ===")
     sb.appendLine("Project: ${File(ctx.projectDir).name}")
-    sb.appendLine("Indexed Files: ${index.totalSourceFiles}")
-    ctx.packageName?.let { sb.appendLine("Package: $it") }
-    sb.appendLine("Language: ${ctx.language.display}")
-    sb.appendLine("UI: ${ctx.ui.display}")
-    sb.appendLine("Architecture: ${ctx.architecture.display}")
-    sb.appendLine("Build System: ${ctx.buildSystem.display}")
-    if (ctx.modules.isNotEmpty()) {
-      sb.appendLine("Modules: ${ctx.modules.joinToString(", ")}")
+    sb.appendLine("Type: ${ctx.projectType.display}")
+    sb.appendLine("Languages: ${ctx.languages.joinToString(", ") { it.display }.ifEmpty { "Unknown" }}")
+    ctx.entryFile?.let { sb.appendLine("Entry: $it") }
+    if (ctx.hasPackageJson) sb.appendLine("Has package.json: yes")
+    if (ctx.dependencies.isNotEmpty()) {
+      sb.appendLine("Dependencies: ${ctx.dependencies.sorted().joinToString(", ")}")
     }
-    if (ctx.libraries.isNotEmpty()) {
-      sb.appendLine("Libraries: ${ctx.libraries.joinToString(", ")}")
+    if (ctx.scripts.isNotEmpty()) {
+      sb.appendLine("Scripts: ${ctx.scripts.joinToString(", ")}")
     }
-    if (ctx.activities.isNotEmpty()) {
-      sb.appendLine("Activities: ${ctx.activities.size}")
+    if (ctx.dirs.isNotEmpty()) {
+      sb.appendLine("Directories: ${ctx.dirs.joinToString(", ")}")
     }
-    if (ctx.minSdk != null || ctx.targetSdk != null) {
-      sb.appendLine("SDK: min=${ctx.minSdk ?: "?"} target=${ctx.targetSdk ?: "?"}")
-    }
+    sb.appendLine("Files: ${index.totalSourceFiles} source files")
     if (currentFile != null) {
       sb.appendLine("Current File: $currentFile")
     }
     sb.appendLine()
 
     sb.appendLine("=== RULES ===")
-    sb.appendLine("1. Always match the existing project's language (${ctx.language.display}).")
-    sb.appendLine("2. Continue using the existing UI framework (${ctx.ui.display}).")
-    sb.appendLine("3. Respect the existing architecture (${ctx.architecture.display}).")
-    sb.appendLine("4. Use the project's package structure (${ctx.packageName ?: "the existing structure"}).")
-    sb.appendLine("5. Never change the project architecture unless the user explicitly requests it.")
-    sb.appendLine("6. Never migrate Java to Kotlin or Kotlin to Java.")
-    sb.appendLine("7. Never migrate XML layouts to Jetpack Compose or Compose to XML.")
-    sb.appendLine("8. When generating a new file, place it in the correct module and package.")
-    sb.appendLine("9. Do NOT generate generic templates. Every response must be tailored to this project.")
-    sb.appendLine("10. Responses must reference the project structure, classes, and packages you see above.")
+    sb.appendLine("1. Always match the existing project's languages (${ctx.languages.joinToString(", ") { it.display }.ifEmpty { "Unknown" }}).")
+    sb.appendLine("2. Prefer plain HTML/CSS/JS unless the project already uses a framework (${ctx.projectType.display}).")
+    sb.appendLine("3. Reference actual files and symbols in this project.")
+    sb.appendLine("4. When generating a new file, put it in a sensible location for this project type.")
+    sb.appendLine("5. Do NOT generate generic templates. Every response must be tailored to this project.")
+    sb.appendLine("6. Never invent files or paths that do not exist.")
     sb.appendLine()
 
     sb.appendLine("=== FILE MODIFICATION ===")
     sb.appendLine("To create or modify a file:")
-    sb.appendLine("[[WRITE:relative/path/File.kt]]")
+    sb.appendLine("[[WRITE:relative/path/file.html]]")
     sb.appendLine("<full file content>")
     sb.appendLine("[[END]]")
     sb.appendLine()
@@ -80,12 +72,10 @@ object PromptBuilder {
     sb.appendLine()
 
     sb.appendLine("Project: ${summary.projectName}")
-    sb.appendLine("Language: ${ProjectContextSummary.displayOrUnknown(summary.language)}")
-    summary.uiFramework?.let { sb.appendLine("UI: $it") }
-    summary.packageName?.let { sb.appendLine("Package: $it") }
-    summary.architecture?.let { sb.appendLine("Architecture: $it") }
-    summary.buildSystem?.let { sb.appendLine("Build: $it") }
-    if (summary.moduleCount > 0) sb.appendLine("Modules: ${summary.moduleCount}")
+    summary.projectType?.let { sb.appendLine("Type: $it") }
+    summary.languages?.let { sb.appendLine("Languages: $it") }
+    summary.entryFile?.let { sb.appendLine("Entry: $it") }
+    if (summary.dependencyCount > 0) sb.appendLine("Dependencies: ${summary.dependencyCount}")
     if (summary.totalFiles > 0) sb.appendLine("Files: ${summary.totalFiles}")
     if (summary.lastIndexedAt > 0L) {
       sb.appendLine("Last Indexed: ${formatRelativeTime(summary.lastIndexedAt)}")
@@ -122,76 +112,49 @@ object PromptBuilder {
     sb.appendLine("=== PROJECT ANALYSIS ===")
     sb.appendLine()
     sb.appendLine("Project: ${File(ctx.projectDir).name}")
-    sb.appendLine("Package: ${ctx.packageName ?: "N/A"}")
-    sb.appendLine("Language: ${ctx.language.display}")
-    sb.appendLine("UI Framework: ${ctx.ui.display}")
-    sb.appendLine("Architecture: ${ctx.architecture.display}")
-    sb.appendLine("Build System: ${ctx.buildSystem.display}")
-    sb.appendLine("Modules: ${ctx.modules.joinToString(", ").ifEmpty { "N/A" }}")
+    sb.appendLine("Type: ${ctx.projectType.display}")
+    sb.appendLine("Languages: ${ctx.languages.joinToString(", ") { it.display }.ifEmpty { "N/A" }}")
+    sb.appendLine("Entry: ${ctx.entryFile ?: "N/A"}")
     sb.appendLine("Source Files: ${index.totalSourceFiles}")
-    sb.appendLine("SDK: min=${ctx.minSdk ?: "N/A"} target=${ctx.targetSdk ?: "N/A"} compile=${ctx.compileSdk ?: "N/A"}")
     sb.appendLine()
 
-    if (ctx.libraries.isNotEmpty()) {
-      sb.appendLine("=== DETECTED LIBRARIES ===")
-      ctx.libraries.forEach { sb.appendLine("- $it") }
+    if (ctx.dependencies.isNotEmpty()) {
+      sb.appendLine("=== DEPENDENCIES ===")
+      ctx.dependencies.sorted().forEach { sb.appendLine("- $it") }
       sb.appendLine()
     }
 
-    if (ctx.activities.isNotEmpty()) {
-      sb.appendLine("=== ACTIVITIES ===")
-      ctx.activities.forEach { sb.appendLine("- $it") }
+    if (ctx.scripts.isNotEmpty()) {
+      sb.appendLine("=== SCRIPTS ===")
+      ctx.scripts.forEach { sb.appendLine("- $it") }
       sb.appendLine()
     }
 
     if (index.files.isNotEmpty()) {
-      sb.appendLine("=== PACKAGE HIERARCHY ===")
-      val packages = index.files.mapNotNull { it.packageName }.distinct().sorted()
-      packages.forEach { sb.appendLine("- $it") }
+      sb.appendLine("=== FILE LAYOUT ===")
+      index.files.map { it.relativePath }.sorted().take(50).forEach { sb.appendLine("- $it") }
       sb.appendLine()
     }
-
-    sb.appendLine("=== CLASSES & OBJECTS ===")
-    val classCount = index.files.sumOf { it.classes.size }
-    val importCount = index.files.sumOf { it.imports.size }
-    sb.appendLine("Total classes/interfaces: $classCount")
-    sb.appendLine("Total imports: $importCount")
-    sb.appendLine()
 
     sb.appendLine("To analyze code quality or find bugs, ask about specific files.")
     return sb.toString()
   }
 
-  private val Language.display: String get() = when (this) {
-    Language.JAVA -> "Java"
-    Language.KOTLIN -> "Kotlin"
-    Language.MIXED -> "Mixed (Java + Kotlin)"
-    Language.UNKNOWN -> "Mixed"
+  private val WebProjectType.display: String get() = when (this) {
+    WebProjectType.STATIC_HTML -> "Static HTML"
+    WebProjectType.NODE_PROJECT -> "Node.js"
+    WebProjectType.VITE_PROJECT -> "Vite"
+    WebProjectType.REACT_PROJECT -> "React"
+    WebProjectType.UNKNOWN_WEB_PROJECT -> "Web"
   }
 
-  private val UIFramework.display: String get() = when (this) {
-    UIFramework.XML -> "XML Layouts"
-    UIFramework.COMPOSE -> "Jetpack Compose"
-    UIFramework.MIXED -> "Mixed (XML + Compose)"
-    UIFramework.UNKNOWN -> "XML Layouts"
-  }
-
-  private val Architecture.display: String get() = when (this) {
-    Architecture.MVVM -> "MVVM"
-    Architecture.MVP -> "MVP"
-    Architecture.MVC -> "MVC"
-    Architecture.CLEAN -> "Clean Architecture"
-    Architecture.UNKNOWN -> "Standard Android"
-  }
-
-  private val BuildSystem.display: String get() = when (this) {
-    BuildSystem.GROOVY -> "Gradle (Groovy DSL)"
-    BuildSystem.KTS -> "Gradle Kotlin DSL"
-    BuildSystem.UNKNOWN -> "Gradle"
-  }
-
-  private val ProjectType.display: String get() = when (this) {
-    ProjectType.ANDROID -> "Android"
-    ProjectType.UNKNOWN -> "Android"
+  private val WebLanguage.display: String get() = when (this) {
+    WebLanguage.HTML -> "HTML"
+    WebLanguage.CSS -> "CSS"
+    WebLanguage.JAVASCRIPT -> "JavaScript"
+    WebLanguage.JSON -> "JSON"
+    WebLanguage.MARKDOWN -> "Markdown"
+    WebLanguage.TYPESCRIPT -> "TypeScript"
+    WebLanguage.UNKNOWN -> "Unknown"
   }
 }

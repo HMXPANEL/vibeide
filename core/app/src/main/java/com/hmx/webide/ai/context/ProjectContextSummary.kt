@@ -49,12 +49,10 @@ enum class IndexingState {
 data class ProjectContextSummary(
   val projectDir: String,
   val projectName: String,
-  val language: String?,
-  val uiFramework: String?,
-  val packageName: String?,
-  val architecture: String?,
-  val buildSystem: String?,
-  val moduleCount: Int,
+  val projectType: String?,
+  val languages: String?,
+  val entryFile: String?,
+  val dependencyCount: Int,
   val totalFiles: Int,
   val lastIndexedAt: Long,
   val state: IndexingState,
@@ -86,14 +84,11 @@ data class ProjectContextSummary(
       return ProjectContextSummary(
         projectDir = ctx.projectDir,
         projectName = File(ctx.projectDir).name.ifBlank { UNKNOWN },
-        language = ctx.language.takeIf { it != Language.UNKNOWN }?.let(::languageLabel),
-        uiFramework = ctx.ui.takeIf { it != UIFramework.UNKNOWN }?.let(::uiLabel),
-        packageName = ctx.packageName?.takeIf { it.isNotBlank() },
-        architecture = ctx.architecture.takeIf { it != Architecture.UNKNOWN }
-          ?.let(::architectureLabel),
-        buildSystem = ctx.buildSystem.takeIf { it != BuildSystem.UNKNOWN }
-          ?.let(::buildSystemLabel),
-        moduleCount = ctx.modules.size,
+        projectType = ctx.projectType.name.lowercase().replace('_', ' '),
+        languages = ctx.languages.joinToString(", ") { it.name.lowercase().replaceFirstChar(Char::uppercase) }
+          .takeIf { it.isNotBlank() },
+        entryFile = ctx.entryFile,
+        dependencyCount = ctx.dependencies.size,
         totalFiles = index.totalSourceFiles,
         lastIndexedAt = ctx.lastAnalyzed,
         state = state,
@@ -113,44 +108,14 @@ data class ProjectContextSummary(
     ): ProjectContextSummary = ProjectContextSummary(
       projectDir = projectDir,
       projectName = File(projectDir).name.ifBlank { UNKNOWN },
-      language = null,
-      uiFramework = null,
-      packageName = null,
-      architecture = null,
-      buildSystem = null,
-      moduleCount = 0,
+      projectType = null,
+      languages = null,
+      entryFile = null,
+      dependencyCount = 0,
       totalFiles = 0,
       lastIndexedAt = 0L,
       state = state,
       progress = progress,
     )
-
-    private fun languageLabel(value: Language): String = when (value) {
-      Language.JAVA -> "Java"
-      Language.KOTLIN -> "Kotlin"
-      Language.MIXED -> "Java + Kotlin"
-      Language.UNKNOWN -> UNKNOWN
-    }
-
-    private fun uiLabel(value: UIFramework): String = when (value) {
-      UIFramework.XML -> "XML"
-      UIFramework.COMPOSE -> "Compose"
-      UIFramework.MIXED -> "XML + Compose"
-      UIFramework.UNKNOWN -> UNKNOWN
-    }
-
-    private fun architectureLabel(value: Architecture): String = when (value) {
-      Architecture.MVVM -> "MVVM"
-      Architecture.MVP -> "MVP"
-      Architecture.MVC -> "MVC"
-      Architecture.CLEAN -> "Clean Architecture"
-      Architecture.UNKNOWN -> UNKNOWN
-    }
-
-    private fun buildSystemLabel(value: BuildSystem): String = when (value) {
-      BuildSystem.GROOVY -> "Gradle (Groovy)"
-      BuildSystem.KTS -> "Gradle (Kotlin DSL)"
-      BuildSystem.UNKNOWN -> UNKNOWN
-    }
   }
 }

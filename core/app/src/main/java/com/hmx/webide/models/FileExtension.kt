@@ -28,23 +28,17 @@ import java.io.File
  * @author Akash Yadav
  */
 enum class FileExtension(val extension: String, @DrawableRes val icon: Int) {
-  JAVA("java", R.drawable.ic_language_java),
-  JAR("jar", R.drawable.ic_language_java),
-  KT("kt", R.drawable.ic_language_kotlin),
-  KTS("kts", R.drawable.ic_language_kts),
-  XML("xml", R.drawable.ic_language_xml),
-  GRADLE("gradle", R.drawable.ic_gradle),
+  HTML("html", R.drawable.ic_file_txt),
+  HTM("htm", R.drawable.ic_file_txt),
+  CSS("css", R.drawable.ic_file_txt),
+  JS("js", R.drawable.ic_file_txt),
+  MJS("mjs", R.drawable.ic_file_txt),
+  TS("ts", R.drawable.ic_file_txt),
+  MD("md", R.drawable.ic_file_txt),
   JSON("json", R.drawable.ic_language_json),
-  PROPERTIES("properties", R.drawable.ic_language_properties),
-  APK("apk", R.drawable.ic_file_apk),
   TXT("txt", R.drawable.ic_file_txt),
-  LOG("log", R.drawable.ic_file_txt),
-  CPP("cpp", R.drawable.ic_language_cpp),
-  H("h", R.drawable.ic_language_cpp),
-  BAT("bat", R.drawable.ic_terminal),
   DIRECTORY("", R.drawable.ic_folder),
   IMAGE("", R.drawable.ic_file_image),
-  GRADLEW("", R.drawable.ic_terminal),
   UNKNOWN("", R.drawable.ic_file_unknown);
 
   /** Factory class for getting [FileExtension] instances. */
@@ -56,7 +50,6 @@ enum class FileExtension(val extension: String, @DrawableRes val icon: Int) {
       fun forFile(file: File?): FileExtension {
         return if (file?.isDirectory == true) DIRECTORY
           else if (ImageUtils.isImage(file)) IMAGE
-          else if ("gradlew" == file?.name) GRADLEW
           else forExtension(file?.extension)
       }
 

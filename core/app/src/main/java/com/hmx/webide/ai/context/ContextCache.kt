@@ -60,13 +60,9 @@ object ContextCache {
     cache[projectDir] = Entry(
       index = index,
       trackedFiles = mapOf(
-        "manifest" to getModStamp(File(root, "app/src/main/AndroidManifest.xml")),
-        "gradle_app" to getModStamp(File(root, "app/build.gradle.kts")),
-        "gradle_root" to getModStamp(File(root, "build.gradle.kts")),
-        "settings" to getModStamp(File(root, "settings.gradle.kts")),
-        "gradle_app_groovy" to getModStamp(File(root, "app/build.gradle")),
-        "gradle_root_groovy" to getModStamp(File(root, "build.gradle")),
-        "settings_groovy" to getModStamp(File(root, "settings.gradle")),
+        "index_html" to getModStamp(File(root, "index.html")),
+        "package_json" to getModStamp(File(root, "package.json")),
+        "vite_config" to getModStamp(File(root, "vite.config.js")),
       ),
     )
   }
@@ -120,13 +116,9 @@ object ContextCache {
   private fun isStale(projectDir: String, entry: Entry): Boolean {
     for ((key, stamp) in entry.trackedFiles) {
       val file = when (key) {
-        "manifest" -> File(projectDir, "app/src/main/AndroidManifest.xml")
-        "gradle_app" -> File(projectDir, "app/build.gradle.kts")
-        "gradle_root" -> File(projectDir, "build.gradle.kts")
-        "settings" -> File(projectDir, "settings.gradle.kts")
-        "gradle_app_groovy" -> File(projectDir, "app/build.gradle")
-        "gradle_root_groovy" -> File(projectDir, "build.gradle")
-        "settings_groovy" -> File(projectDir, "settings.gradle")
+        "index_html" -> File(projectDir, "index.html")
+        "package_json" -> File(projectDir, "package.json")
+        "vite_config" -> File(projectDir, "vite.config.js")
         else -> continue
       }
       if (file.exists()) {

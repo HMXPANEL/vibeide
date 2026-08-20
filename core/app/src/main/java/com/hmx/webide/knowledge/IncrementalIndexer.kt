@@ -29,6 +29,7 @@ class IncrementalIndexer(
 
   companion object {
     private const val DEBOUNCE_MS = 800L
+    val WEB_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "cjs", "json", "md")
   }
 
   fun onFileOpen(file: File, content: String) {
@@ -111,8 +112,8 @@ class IncrementalIndexer(
   }
 
   private fun parseAndIndex(file: File, root: File, content: String) {
-    val ext = file.extension
-    if (ext != "java" && ext != "kt") return
+    val ext = file.extension.lowercase()
+    if (ext !in WEB_EXTENSIONS) return
 
     val newDecls = mutableListOf<DeclarationModel>()
     val model = FileParser.parse(file, root, content)
@@ -120,10 +121,8 @@ class IncrementalIndexer(
 
     val relPath = file.relativeTo(root).path
     index.removeFile(file.absolutePath)
-    if (model.packageName != null) {
-      for (decl in newDecls) {
-        index.add(decl.fqn, SymbolLocation(file.absolutePath, decl.line, decl.column), file.absolutePath, decl)
-      }
+    for (decl in newDecls) {
+      index.add(decl.fqn, SymbolLocation(file.absolutePath, decl.line, decl.column), file.absolutePath, decl)
     }
     index.addFile(relPath, model)
 

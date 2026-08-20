@@ -3,33 +3,32 @@ package com.hmx.webide.ai.context
 import java.io.File
 
 data class ScanResult(
-  val kotlinFiles: List<File> = emptyList(),
-  val javaFiles: List<File> = emptyList(),
-  val xmlLayoutFiles: List<File> = emptyList(),
-  val manifestFiles: List<File> = emptyList(),
-  val ktsFiles: List<File> = emptyList(),
-  val groovyGradleFiles: List<File> = emptyList(),
+  val htmlFiles: List<File> = emptyList(),
+  val cssFiles: List<File> = emptyList(),
+  val jsFiles: List<File> = emptyList(),
+  val jsonFiles: List<File> = emptyList(),
+  val mdFiles: List<File> = emptyList(),
+  val packageJsonFile: File? = null,
   val allSourceFiles: List<File> = emptyList(),
   val fileInfos: List<ProjectFileInfo> = emptyList(),
+  val totalFiles: Int = 0,
 )
 
 object ProjectScanner {
 
-  private val SKIP_DIRS = setOf("build", ".git", ".gradle", "bin", "obj", "node_modules", "cmake-build-debug", ".idea")
-  private val MANIFEST_NAMES = setOf("AndroidManifest.xml")
-  private val GRADLE_NAMES = setOf("build.gradle", "build.gradle.kts", "settings.gradle.kts", "settings.gradle")
+  val WEB_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "cjs", "json", "md", "txt", "yml", "yaml", "ts", "tsx", "jsx", "vue", "svg")
 
-  private val RELEVANT_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "json", "md", "txt", "xml", "yml", "yaml")
+  private val SKIP_DIRS = setOf("build", ".git", ".gradle", "bin", "obj", "node_modules", "cmake-build-debug", ".idea", "dist")
 
   fun scan(root: File, onProgress: ((String) -> Unit)? = null): ScanResult {
-    val kotlinFiles = mutableListOf<File>()
-    val javaFiles = mutableListOf<File>()
-    val xmlLayoutFiles = mutableListOf<File>()
-    val manifestFiles = mutableListOf<File>()
-    val ktsFiles = mutableListOf<File>()
-    val groovyGradleFiles = mutableListOf<File>()
+    val htmlFiles = mutableListOf<File>()
+    val cssFiles = mutableListOf<File>()
+    val jsFiles = mutableListOf<File>()
+    val jsonFiles = mutableListOf<File>()
+    val mdFiles = mutableListOf<File>()
     val allSourceFiles = mutableListOf<File>()
     val fileInfos = mutableListOf<ProjectFileInfo>()
+    var packageJsonFile: File? = null
 
     val allFiles = mutableListOf<File>()
     walkProject(root) { allFiles.add(it) }
@@ -41,37 +40,20 @@ object ProjectScanner {
       if (total > 100 && count % (total / 10) == 0) {
         onProgress?.invoke("Scanning... ${(count * 100 / total)}%")
       }
-      when {
-        file.name in MANIFEST_NAMES -> {
-          manifestFiles.add(file)
-          onProgress?.invoke("✓ AndroidManifest.xml")
+      when (val ext = file.extension.lowercase()) {
+        "html", "htm" -> htmlFiles.add(file)
+        "css" -> cssFiles.add(file)
+        "js", "mjs", "cjs" -> jsFiles.add(file)
+        "json" -> {
+          jsonFiles.add(file)
+          if (file.name == "package.json" && packageJsonFile == null) packageJsonFile = file
         }
-        file.name in GRADLE_NAMES -> {
-          allSourceFiles.add(file)
+        "md", "markdown" -> mdFiles.add(file)
+      }
+      if (ext in WEB_EXTENSIONS) {
+        allSourceFiles.add(file)
+        if (ext in PARSEABLE_EXTENSIONS) {
           fileInfos.add(buildFileInfo(file, root))
-          if (file.name.endsWith(".kts")) ktsFiles.add(file)
-          else groovyGradleFiles.add(file)
-          onProgress?.invoke("✓ ${file.name}")
-        }
-        file.name == "gradle.properties" || file.name == "libs.versions.toml" -> {
-          allSourceFiles.add(file)
-          fileInfos.add(buildFileInfo(file, root))
-        }
-        file.extension == "kt" -> {
-          kotlinFiles.add(file)
-          allSourceFiles.add(file)
-          fileInfos.add(buildFileInfo(file, root))
-        }
-        file.extension == "java" -> {
-          javaFiles.add(file)
-          allSourceFiles.add(file)
-          fileInfos.add(buildFileInfo(file, root))
-        }
-        file.extension == "xml" -> {
-          if (isLayoutXml(file)) xmlLayoutFiles.add(file)
-        }
-        file.extension in RELEVANT_EXTENSIONS -> {
-          allSourceFiles.add(file)
         }
       }
     }
@@ -79,14 +61,15 @@ object ProjectScanner {
     onProgress?.invoke("✓ Indexed ${allSourceFiles.size} files")
 
     return ScanResult(
-      kotlinFiles = kotlinFiles,
-      javaFiles = javaFiles,
-      xmlLayoutFiles = xmlLayoutFiles,
-      manifestFiles = manifestFiles,
-      ktsFiles = ktsFiles,
-      groovyGradleFiles = groovyGradleFiles,
+      htmlFiles = htmlFiles,
+      cssFiles = cssFiles,
+      jsFiles = jsFiles,
+      jsonFiles = jsonFiles,
+      mdFiles = mdFiles,
+      packageJsonFile = packageJsonFile,
       allSourceFiles = allSourceFiles,
       fileInfos = fileInfos,
+      totalFiles = total,
     )
   }
 
@@ -95,18 +78,25 @@ object ProjectScanner {
       path = file.absolutePath,
       relativePath = file.relativeTo(root).path,
     )
-    val packageName = Regex("""^package\s+([\w.]+)""", RegexOption.MULTILINE)
-      .find(content)?.groupValues?.getOrNull(1)
-    val imports = Regex("""^import\s+([\w.*]+)""", RegexOption.MULTILINE)
-      .findAll(content).map { it.groupValues[1] }.toList()
-    val classes = Regex("""\b(?:class|interface|object|enum class|data class|sealed class|abstract class)\s+(\w+)""")
+    val imports = when (file.extension.lowercase()) {
+      "js", "mjs", "cjs", "ts", "tsx", "jsx" ->
+        Regex("""(?:import|export)\s+.*?from\s+['"]([^'"]+)['"]""")
+          .findAll(content).map { it.groupValues[1] }.toList()
+      "html" ->
+        Regex("""<script[^>]+src\s*=\s*['"]([^'"]+)['"]""")
+          .findAll(content).map { it.groupValues[1] }.toList()
+      "css" ->
+        Regex("""@import\s+['"]([^'"]+)['"]""")
+          .findAll(content).map { it.groupValues[1] }.toList()
+      else -> emptyList()
+    }
+    val names = Regex("""\b(?:function|class|const|let|var|async function)\s+([A-Za-z_$][\w$]*)""")
       .findAll(content).map { it.groupValues[1] }.toList()
     return ProjectFileInfo(
       path = file.absolutePath,
       relativePath = file.relativeTo(root).path,
-      packageName = packageName,
       imports = imports,
-      classes = classes,
+      classes = names,
     )
   }
 
@@ -125,8 +115,5 @@ object ProjectScanner {
     }
   }
 
-  private fun isLayoutXml(file: File): Boolean {
-    val path = file.absolutePath
-    return path.contains("/res/layout") || path.contains("/res/layout-")
-  }
+  private val PARSEABLE_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "cjs", "json", "md", "ts", "tsx", "jsx")
 }

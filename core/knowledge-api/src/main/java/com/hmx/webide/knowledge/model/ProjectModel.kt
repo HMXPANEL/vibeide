@@ -36,6 +36,7 @@ data class DeclarationModel(
 enum class SymbolKind {
   CLASS, INTERFACE, ENUM, ANNOTATION, OBJECT,
   METHOD, CONSTRUCTOR, FIELD, PROPERTY, ENUM_CONSTANT,
+  FUNCTION, VARIABLE, SELECTOR, HEADING, KEY,
 }
 
 typealias SymbolLocation = com.hmx.webide.indexing.model.SymbolLocation
