@@ -1,7 +1,7 @@
 package com.hmx.webide.editor.language
 
+import io.github.rosemoe.sora.lang.EmptyLanguage
 import io.github.rosemoe.sora.lang.analysis.AnalyzeManager
-import io.github.rosemoe.sora.lang.analysis.EmptyAnalyzeManager
 
 /**
  * A lightweight [IDELanguage] for web source files (HTML, CSS, JavaScript, Markdown).
@@ -14,5 +14,7 @@ class WebLanguage(val type: String) : IDELanguage() {
 
   override fun getTabSize(): Int = 2
 
-  override fun getAnalyzeManager(): AnalyzeManager = EmptyAnalyzeManager()
+  override fun getAnalyzeManager(): AnalyzeManager = EmptyLanguage.EmptyAnalyzeManager()
+
+  override fun getInterruptionLevel(): Int = INTERRUPTION_LEVEL_NORMAL
 }
