@@ -18,7 +18,7 @@
 package com.hmx.webide.activities.editor
 
 import android.view.Gravity
-import android.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import androidx.annotation.GravityInt
 import com.hmx.webide.R.string
 import com.hmx.webide.databinding.LayoutSearchProjectBinding

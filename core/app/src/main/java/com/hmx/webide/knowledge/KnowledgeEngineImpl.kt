@@ -21,7 +21,7 @@ import java.io.File
 
 object KnowledgeEngineImpl : KnowledgeEngine {
 
-  private const val WEB_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "cjs", "json", "md", "txt", "xml")
+  private val WEB_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "cjs", "json", "md", "txt", "xml")
 
   private val index = SymbolIndex(maxSize = 5000)
   private var indexer = IncrementalIndexer(index, rootDir = { rootDir })
