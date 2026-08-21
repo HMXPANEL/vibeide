@@ -67,7 +67,13 @@
     <activity android:name=".activities.ContributorsActivity" />
     <activity
       android:exported="false"
+      android:name=".activities.NewProjectActivity"
+      android:windowSoftInputMode="adjustResize"
+      android:theme="@style/Theme.AndroidIDE" />
+    <activity
+      android:exported="false"
       android:name=".activities.aichat.AIChatActivity"
+      android:windowSoftInputMode="adjustResize"
       android:theme="@style/Theme.AndroidIDE" />
 
     <activity

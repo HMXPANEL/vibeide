@@ -21,6 +21,7 @@
   xmlns:android="http://schemas.android.com/apk/res/android"
   xmlns:app="http://schemas.android.com/apk/res-auto"
   xmlns:tools="http://schemas.android.com/tools"
+  android:id="@+id/chatRoot"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
   android:orientation="vertical"
@@ -57,82 +58,81 @@
     android:text="@string/action_apply_changes"
     android:visibility="gone" />
 
-  <HorizontalScrollView
-    android:id="@+id/suggestionsScroll"
+  <!-- Bottom chat input: same compact card as Home. Plus left, Build/Plan near Send right. -->
+  <com.google.android.material.card.MaterialCardView
+    android:id="@+id/aiCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingStart="8dp"
-    android:paddingEnd="8dp"
-    android:paddingBottom="4dp"
-    android:clipToPadding="false"
-    android:scrollbars="none"
-    android:visibility="gone">
+    android:layout_gravity="center_horizontal"
+    android:layout_marginStart="12dp"
+    android:layout_marginEnd="12dp"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutline"
+    app:cardBackgroundColor="?attr/colorSurfaceVariant">
 
-    <com.google.android.material.chip.ChipGroup
-      android:id="@+id/suggestionChips"
-      android:layout_width="wrap_content"
+    <LinearLayout
+      android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      app:singleLine="true"
-      app:singleSelection="false" />
+      android:orientation="vertical"
+      android:padding="16dp">
 
-  </HorizontalScrollView>
+      <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/messageInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minLines="2"
+        android:maxLines="6"
+        android:gravity="top"
+        android:background="@null"
+        android:hint="@string/home_hint_chat"
+        android:inputType="textMultiLine|textCapSentences"
+        android:importantForAutofill="no" />
 
-  <LinearLayout
-    android:id="@+id/contextIndicator"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:paddingStart="16dp"
-    android:paddingEnd="8dp"
-    android:paddingTop="2dp"
-    android:paddingBottom="2dp">
+      <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
 
-    <TextView
-      android:id="@+id/contextStatus"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_weight="1"
-      android:textAppearance="?attr/textAppearanceBodySmall"
-      android:textColor="?attr/colorOnSurfaceVariant"
-      android:maxLines="1"
-      android:ellipsize="end"
-      tools:text="Project Context: ON • 245 files • Ready" />
+        <ImageButton
+          android:id="@+id/plusButton"
+          android:layout_width="40dp"
+          android:layout_height="40dp"
+          android:background="?attr/selectableItemBackgroundBorderless"
+          android:contentDescription="@string/home_actions_title"
+          android:src="@drawable/ic_add"
+          app:tint="?attr/colorOnSurfaceVariant" />
 
-    <com.google.android.material.materialswitch.MaterialSwitch
-      android:id="@+id/contextToggle"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:checked="true"
-      android:contentDescription="@string/action_ai_chat_use_project_context" />
+        <Space
+          android:layout_width="0dp"
+          android:layout_height="0dp"
+          android:layout_weight="1" />
 
-  </LinearLayout>
+        <com.google.android.material.button.MaterialButton
+          android:id="@+id/modeSwitch"
+          style="@style/Widget.Material3.Button.OutlinedButton"
+          android:layout_width="wrap_content"
+          android:layout_height="36dp"
+          android:minWidth="0dp"
+          android:paddingStart="14dp"
+          android:paddingEnd="14dp"
+          android:text="@string/home_build" />
 
-  <LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="8dp"
-    android:gravity="center_vertical">
-
-    <com.google.android.material.textfield.TextInputEditText
-      android:id="@+id/messageInput"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_weight="1"
-      android:hint="@string/hint_ai_chat_message"
-      android:inputType="textMultiLine"
-      android:maxLines="4"
-      android:importantForAutofill="no" />
-
-    <com.google.android.material.button.MaterialButton
-      android:id="@+id/send"
-      style="@style/Widget.Material3.Button.IconButton"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:contentDescription="@string/title_ai_chat_send"
-      app:icon="@drawable/ic_send" />
-
-  </LinearLayout>
+        <ImageButton
+          android:id="@+id/sendButton"
+          android:layout_width="48dp"
+          android:layout_height="48dp"
+          android:layout_marginStart="8dp"
+          android:background="@drawable/bg_send_button"
+          android:contentDescription="@string/title_ai_chat_send"
+          android:src="@drawable/ic_send"
+          app:tint="?attr/colorOnPrimary" />
+      </LinearLayout>
+    </LinearLayout>
+  </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>

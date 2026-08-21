@@ -1,18 +1,16 @@
 package com.hmx.webide.activities.aichat
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.chip.Chip
 import com.hmx.webide.ai.AiFactory
 import com.hmx.webide.ai.context.ContextCache
-import com.hmx.webide.ai.context.IndexingState
-import com.hmx.webide.ai.context.ProjectContextSummary
 import com.hmx.webide.ai.context.PromptBuilder
 import com.hmx.webide.ai.engine.ChatEngine
-import com.hmx.webide.ai.errors.ProviderConfigurationException
 import com.hmx.webide.app.BaseIDEActivity
 import com.hmx.webide.databinding.ActivityAiChatBinding
+import com.hmx.webide.fragments.HomeActionsSheet
 import com.hmx.webide.projects.IProjectManager
 import com.hmx.webide.R
 import com.hmx.webide.resources.R.string
@@ -41,19 +39,15 @@ class AIChatActivity : BaseIDEActivity() {
   private var currentFile: String? = null
   private var pendingEdits = linkedMapOf<String, String>()
 
+  private var mode = "build"
+
   private val chatEngine by lazy { ChatEngine(AiFactory.engine()) }
 
   /**
-   * System prompt derived from the project index. Only sent when [useProjectContext] is `true`;
-   * it is never discarded on toggle-off so the toggle stays free.
+   * System prompt derived from the project index. Built silently in the background; never
+   * surfaced as chat metadata.
    */
   private var systemPrompt: String? = null
-
-  /** Latest known summary. Never triggers a scan by itself. */
-  private var contextSummary: ProjectContextSummary? = null
-
-  /** Toggle state. `true` => the existing system prompt is attached to requests. */
-  private var useProjectContext: Boolean = true
 
   override fun bindLayout(): View {
     binding = ActivityAiChatBinding.inflate(layoutInflater)
@@ -65,6 +59,9 @@ class AIChatActivity : BaseIDEActivity() {
 
     projectDir = runCatching { IProjectManager.getInstance().projectDir }.getOrNull()
     currentFile = intent.getStringExtra(EXTRA_CURRENT_FILE)
+    if (intent.getStringExtra(EXTRA_MODE) == "plan") {
+      mode = "plan"
+    }
 
     binding.messages.adapter = adapter
     binding.messages.layoutManager = LinearLayoutManager(this).apply {
@@ -79,39 +76,46 @@ class AIChatActivity : BaseIDEActivity() {
       } else false
     }
 
-    binding.send.setOnClickListener { sendMessage() }
-
-    binding.contextToggle.setOnCheckedChangeListener { _, isChecked ->
-      useProjectContext = isChecked
-      renderContextIndicator()
-      renderSuggestions()
+    binding.plusButton.setOnClickListener {
+      HomeActionsSheet().show(supportFragmentManager, HomeActionsSheet.TAG)
     }
+
+    binding.modeSwitch.setOnClickListener { showModeMenu() }
+    binding.sendButton.setOnClickListener { sendMessage() }
+    updateModeUi()
 
     val initialMessage = intent.getStringExtra(EXTRA_INITIAL_MESSAGE)
     if (!initialMessage.isNullOrBlank()) {
       binding.messageInput.setText(initialMessage)
     }
-    if (intent.getStringExtra(EXTRA_MODE) == "chat") {
-      useProjectContext = false
-      binding.contextToggle.isChecked = false
-    }
 
     if (projectDir != null) {
       startProjectContext(projectDir!!)
     } else {
-      contextSummary = null
-      renderContextIndicator()
-      renderSuggestions()
       adapter.add(ChatMessage("assistant",
         getString(string.msg_ai_chat_project_required)))
     }
   }
 
+  /** Compact Build/Plan switcher anchored to the selector button. */
+  private fun showModeMenu() {
+    val items = arrayOf(getString(string.home_build), getString(string.home_plan))
+    AlertDialog.Builder(this)
+      .setSingleChoiceItems(items, if (mode == "plan") 1 else 0) { dialog, which ->
+        dialog.dismiss()
+        mode = if (which == 1) "plan" else "build"
+        updateModeUi()
+      }
+      .show()
+  }
+
+  private fun updateModeUi() {
+    binding.modeSwitch.setText(if (mode == "plan") string.home_plan else string.home_build)
+  }
+
   /**
-   * Renders the startup message using already-indexed data.
-   *
-   * A full scan is only started when neither [ContextCache] nor the knowledge engine hold an
-   * index; the cached path costs a single map lookup and never blocks the UI thread.
+   * Resolves the system prompt from cached index data. A full scan is started only when neither
+   * [ContextCache] nor the knowledge engine hold an index; nothing is rendered meanwhile.
    */
   private fun startProjectContext(root: File) {
     val path = root.absolutePath
@@ -120,110 +124,15 @@ class AIChatActivity : BaseIDEActivity() {
     }
 
     val cached = ContextCache.getSummary(path)
-    if (cached.hasContext) {
-      contextSummary = cached
-      renderContextIndicator()
-      renderSuggestions()
-      adapter.add(ChatMessage("assistant",
-        PromptBuilder.buildStartupMessage(cached, currentFileRel)))
-      // The system prompt needs the full index; resolve it off the UI thread.
-      scope.launch {
-        val index = withContext(Dispatchers.IO) { ContextCache.getOrAnalyze(path) }
-        systemPrompt = PromptBuilder.build(index, currentFileRel ?: currentFile)
-      }
-      return
-    }
-
-    // No index available yet — show progress and scan once.
-    contextSummary = ProjectContextSummary.unavailable(path, IndexingState.INDEXING)
-    renderContextIndicator()
-    renderSuggestions()
-    adapter.add(ChatMessage("assistant", "Scanning project…"))
-
     scope.launch {
       val index = withContext(Dispatchers.IO) {
-        ContextCache.getOrAnalyze(path) { msg ->
-          scope.launch { adapter.setLastContent(msg) }
+        if (cached.hasContext) {
+          ContextCache.getOrAnalyze(path)
+        } else {
+          ContextCache.getOrAnalyze(path) { /* silent */ }
         }
       }
       systemPrompt = PromptBuilder.build(index, currentFileRel ?: currentFile)
-      contextSummary = ProjectContextSummary.from(index, IndexingState.READY)
-      renderContextIndicator()
-      renderSuggestions()
-      adapter.setLastContent(
-        PromptBuilder.buildStartupMessage(contextSummary!!, currentFileRel))
-    }
-  }
-
-  /** Updates the indicator row. Cheap; safe to call on every state change. */
-  private fun renderContextIndicator() {
-    val summary = contextSummary
-    if (summary == null) {
-      binding.contextIndicator.visibility = View.GONE
-      return
-    }
-
-    binding.contextIndicator.visibility = View.VISIBLE
-
-    if (!useProjectContext) {
-      binding.contextStatus.text = getString(string.msg_ai_chat_context_off)
-      return
-    }
-
-    val statusLabel = when (summary.state) {
-      IndexingState.READY -> getString(string.msg_ai_chat_context_ready)
-      IndexingState.UPDATING -> getString(string.msg_ai_chat_context_updating)
-      IndexingState.INDEXING -> summary.progress
-        ?.let { "${getString(string.msg_ai_chat_context_indexing)} ${(it * 100).toInt()}%" }
-        ?: getString(string.msg_ai_chat_context_indexing)
-      IndexingState.UNAVAILABLE -> getString(string.msg_ai_chat_context_unavailable)
-    }
-
-    binding.contextStatus.text = buildString {
-      append(getString(string.msg_ai_chat_context_on))
-      if (summary.totalFiles > 0) {
-        append(" • ")
-        append(getString(string.msg_ai_chat_context_files, summary.totalFiles))
-      }
-      append(" • ")
-      append(statusLabel)
-    }
-  }
-
-  /** Rebuilds the chip row for the current context state. */
-  private fun renderSuggestions() {
-    val hasContext = useProjectContext && contextSummary?.hasContext == true
-    val suggestions = ChatSuggestion.forState(hasContext)
-
-    binding.suggestionChips.removeAllViews()
-    if (suggestions.isEmpty()) {
-      binding.suggestionsScroll.visibility = View.GONE
-      return
-    }
-
-    binding.suggestionsScroll.visibility = View.VISIBLE
-    suggestions.forEach { suggestion ->
-      val chip = Chip(this).apply {
-        text = suggestion.label
-        isCheckable = false
-        isClickable = true
-        setOnClickListener { applySuggestion(suggestion) }
-      }
-      binding.suggestionChips.addView(chip)
-    }
-  }
-
-  /**
-   * Fills the existing input with the chip prompt and reuses the normal send flow. Prompts that
-   * end with a space expect the user to complete them, so they are not auto-sent.
-   */
-  private fun applySuggestion(suggestion: ChatSuggestion) {
-    binding.messageInput.setText(suggestion.prompt)
-    binding.messageInput.setSelection(suggestion.prompt.length)
-    if (!suggestion.prompt.endsWith(" ")) {
-      sendMessage()
-    } else {
-      binding.messageInput.requestFocus()
     }
   }
 
@@ -232,25 +141,25 @@ class AIChatActivity : BaseIDEActivity() {
     if (text.isBlank()) return
     binding.messageInput.text?.clear()
 
-    val isAnalysis = useProjectContext && text.lowercase().startsWith("analyze")
+    val isAnalysis = text.lowercase().startsWith("analyze")
     adapter.add(ChatMessage("user", text))
 
     if (isAnalysis && projectDir != null) {
       scope.launch {
         adapter.add(ChatMessage("assistant", "…"))
-        binding.send.isEnabled = false
+        binding.sendButton.isEnabled = false
         val analysis = withContext(Dispatchers.IO) {
           val idx = ContextCache.getOrAnalyze(projectDir!!.absolutePath)
           PromptBuilder.buildAnalysis(idx)
         }
         adapter.setLastContent(analysis)
-        binding.send.isEnabled = true
+        binding.sendButton.isEnabled = true
       }
       return
     }
 
     adapter.add(ChatMessage("assistant", "…"))
-    binding.send.isEnabled = false
+    binding.sendButton.isEnabled = false
 
     scope.launch(Dispatchers.Main) {
       val result = withContext(Dispatchers.IO) {
@@ -259,13 +168,12 @@ class AIChatActivity : BaseIDEActivity() {
           val providerId = engine.activeProvider().providerId
           val model = AiFactory.storage().getModel(providerId)
           // Provider-agnostic: the same request shape is used for every provider; only the
-          // optional system prompt varies with the toggle.
-          val prompt = systemPrompt.takeIf { useProjectContext }
-          val response = chatEngine.send(model, text, prompt)
+          // optional system prompt varies.
+          val response = chatEngine.send(model, text, systemPrompt)
           response.message.content
         }
       }
-      binding.send.isEnabled = true
+      binding.sendButton.isEnabled = true
       result.onSuccess { content ->
         adapter.setLastContent(content)
         collectEdits(content)
