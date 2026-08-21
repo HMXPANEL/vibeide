@@ -653,8 +653,13 @@
 
   <!-- VibeIDE Home / Sidebar / Profile -->
   <string name="home_welcome">Tell VibeIDE what you want to build</string>
-  <string name="home_hint_build">Build me a premium movie streaming website…</string>
-  <string name="home_hint_chat">How should I structure my portfolio site?</string>
+  <string name="home_hint_build">Build a premium movie streaming website with a cinematic dark design.</string>
+  <string name="home_hint_chat">Ask anything about your project…</string>
+  <string name="home_hint_plan">Plan a premium movie streaming website with authentication, search, categories and watchlist.</string>
+  <string name="home_chat_heading">What would you like to talk about?</string>
+  <string name="home_plan_heading">Describe what you want to plan…</string>
+  <string name="home_plan">Plan</string>
+  <string name="home_search_hint">Search projects…</string>
   <string name="home_recent">Recent projects</string>
   <string name="home_all_projects">All Projects</string>
   <string name="home_create_new_project">Create New Project</string>

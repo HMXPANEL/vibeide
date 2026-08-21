@@ -49,7 +49,7 @@ abstract class ProjectHandlerActivity : BaseEditorActivity() {
   }
 
   override fun doConfirmProjectClose() {
-    confirmProjectClose()
+    runOnUiThread { confirmProjectClose() }
   }
 
   override fun preDestroy() {

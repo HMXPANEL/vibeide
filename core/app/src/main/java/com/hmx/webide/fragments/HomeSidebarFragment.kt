@@ -1,18 +1,14 @@
 package com.hmx.webide.fragments
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.hmx.webide.activities.MainActivity
 import com.hmx.webide.adapters.RecentProjectsAdapter
-import com.hmx.webide.common.databinding.LayoutDialogProgressBinding
 import com.hmx.webide.databinding.FragmentHomeSidebarBinding
 import com.hmx.webide.preferences.databinding.LayoutDialogTextInputBinding
 import com.hmx.webide.preferences.internal.GeneralPreferences
@@ -21,16 +17,11 @@ import com.hmx.webide.utils.DialogUtils
 import com.hmx.webide.utils.Environment
 import com.hmx.webide.utils.ProjectValidator
 import com.hmx.webide.utils.flashError
-import com.hmx.webide.utils.flashSuccess
 import com.hmx.webide.web.WebProjectTemplates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.ProgressMonitor
-import org.slf4j.LoggerFactory
 import java.io.File
-import java.util.concurrent.CancellationException
 
 class HomeSidebarFragment : Fragment() {
 
@@ -38,8 +29,6 @@ class HomeSidebarFragment : Fragment() {
   private val binding get() = checkNotNull(_binding)
 
   private val adapter by lazy { RecentProjectsAdapter(::openProject) }
-
-  private val log = LoggerFactory.getLogger(HomeSidebarFragment::class.java)
 
   override fun onCreateView(
     inflater: LayoutInflater,
@@ -57,7 +46,6 @@ class HomeSidebarFragment : Fragment() {
     binding.projectList.adapter = adapter
 
     binding.createProjectBtn.setOnClickListener { showCreateProject() }
-    binding.cloneBtn.setOnClickListener { cloneGitRepo() }
 
     binding.profileArea.setOnClickListener {
       ProfileSheet().show(childFragmentManager, ProfileSheet.TAG)
@@ -72,22 +60,16 @@ class HomeSidebarFragment : Fragment() {
       override fun afterTextChanged(s: android.text.Editable?) {}
     })
 
-    binding.filterChips.setOnCheckedChangeListener { _, _ -> refreshList(currentQuery()) }
-
     refreshList("")
   }
 
-  private fun currentQuery(): String = binding.searchInput.text?.toString().orEmpty()
-
   private fun refreshList(query: String) {
-    val recentOnly = binding.recentChip.isChecked
     val recent =
       GeneralPreferences.recentProjects
         .filter { it.isNotBlank() && File(it).exists() }
         .toSet()
     val scanned = scanProjectsDir().filter { matches(it, query) }
-    val list =
-      if (recentOnly) scanned.filter { it in recent } else (recent + scanned).distinct()
+    val list = (recent + scanned).distinct()
     adapter.submit(list.map { it to (it in recent) })
   }
 
@@ -173,132 +155,6 @@ class HomeSidebarFragment : Fragment() {
         openProject(dir)
       }
     }
-  }
-
-  private fun cloneGitRepo() {
-    val builder = DialogUtils.newMaterialDialogBuilder(requireContext())
-    val input = LayoutDialogTextInputBinding.inflate(layoutInflater)
-    input.name.setHint(string.git_clone_repo_url)
-
-    builder.setView(input.root)
-    builder.setTitle(string.git_clone_repo)
-    builder.setCancelable(true)
-    builder.setPositiveButton(string.git_clone) { dialog, _ ->
-      dialog.dismiss()
-      val url = input.name.editText?.text?.toString()
-      doClone(url)
-    }
-    builder.setNegativeButton(android.R.string.cancel, null)
-    builder.show()
-  }
-
-  private fun doClone(repo: String?) {
-    if (repo.isNullOrBlank()) {
-      log.warn("Unable to clone repo. Invalid repo URL : '{}'", repo)
-      return
-    }
-
-    var url = repo.trim()
-    if (!url.endsWith(".git")) {
-      url += ".git"
-    }
-
-    val builder = DialogUtils.newMaterialDialogBuilder(requireContext())
-    val progress = LayoutDialogProgressBinding.inflate(layoutInflater)
-    progress.message.visibility = View.VISIBLE
-
-    builder.setTitle(string.git_clone_in_progress)
-    builder.setMessage(url)
-    builder.setView(progress.root)
-    builder.setCancelable(false)
-
-    val repoName = url.substringAfterLast('/').substringBeforeLast(".git")
-    val targetDir = File(Environment.PROJECTS_DIR, repoName)
-
-    val monitor = GitCloneProgressMonitor(progress.progress, progress.message)
-    val scope = viewLifecycleOwner.lifecycleScope
-
-    val cloneJob = scope.launch(Dispatchers.IO) {
-      val git = try {
-        Git.cloneRepository()
-          .setURI(url)
-          .setDirectory(targetDir)
-          .setProgressMonitor(monitor)
-          .call()
-      } catch (err: Throwable) {
-        if (!monitor.isCancelled) {
-          err.printStackTrace()
-          withContext(Dispatchers.Main) {
-            getDialog?.invoke()?.also { if (it.isShowing) it.dismiss() }
-            showCloneError(err)
-          }
-        }
-        null
-      }
-
-      try {
-        git?.close()
-      } finally {
-        val success = git != null
-        withContext(Dispatchers.Main) {
-          getDialog?.invoke()?.also { dialog ->
-            if (dialog.isShowing) dialog.dismiss()
-            if (success) flashSuccess(string.git_clone_success)
-          }
-        }
-      }
-    }
-
-    builder.setPositiveButton(android.R.string.cancel) { iface, _ ->
-      iface.dismiss()
-      monitor.cancel()
-      cloneJob.cancel(CancellationException("Cancelled by user"))
-    }
-
-    val dialog = builder.show()
-    getDialog = { dialog }
-  }
-
-  private var getDialog: (() -> AlertDialog?)? = null
-
-  private fun showCloneError(error: Throwable?) {
-    if (error == null) {
-      flashError(string.git_clone_failed)
-      return
-    }
-    DialogUtils.newMaterialDialogBuilder(requireContext())
-      .setTitle(string.git_clone_failed)
-      .setMessage(error.localizedMessage)
-      .setPositiveButton(android.R.string.ok, null)
-      .show()
-  }
-
-  class GitCloneProgressMonitor(val progress: com.google.android.material.progressindicator.LinearProgressIndicator, val message: TextView) :
-    ProgressMonitor {
-
-    private var cancelled = false
-
-    fun cancel() {
-      cancelled = true
-    }
-
-    override fun start(totalTasks: Int) {
-      com.hmx.webide.tasks.runOnUiThread { progress.max = totalTasks }
-    }
-
-    override fun beginTask(title: String?, totalWork: Int) {
-      com.hmx.webide.tasks.runOnUiThread { message.text = title }
-    }
-
-    override fun update(completed: Int) {
-      com.hmx.webide.tasks.runOnUiThread { progress.progress = completed }
-    }
-
-    override fun showDuration(enabled: Boolean) {}
-
-    override fun endTask() {}
-
-    override fun isCancelled(): Boolean = cancelled || Thread.currentThread().isInterrupted
   }
 
   override fun onDestroyView() {

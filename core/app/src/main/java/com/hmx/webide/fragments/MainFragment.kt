@@ -11,14 +11,13 @@ import com.hmx.webide.activities.aichat.AIChatActivity
 import com.hmx.webide.databinding.FragmentMainBinding
 import com.hmx.webide.resources.R.string
 import com.hmx.webide.utils.flashError
-import java.io.File
 
 class MainFragment : Fragment() {
 
   private var _binding: FragmentMainBinding? = null
   private val binding get() = checkNotNull(_binding)
 
-  private var buildMode = true
+  private var mode = "build"
 
   override fun onCreateView(
     inflater: LayoutInflater,
@@ -35,14 +34,11 @@ class MainFragment : Fragment() {
     binding.menuButton.contentDescription = getString(string.home_open_menu)
     binding.menuButton.setOnClickListener { (requireActivity() as MainActivity).openDrawer() }
 
-    binding.modeToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
-      if (!isChecked) return@addOnButtonCheckedListener
-      buildMode = checkedId == binding.buildButton.id
-      binding.messageInput.hint =
-        if (buildMode) getString(string.home_hint_build) else getString(string.home_hint_chat)
+    binding.chatChip.setOnClickListener { setMode("chat") }
+
+    binding.modeSwitch.setOnClickListener {
+      setMode(if (mode == "plan") "build" else "plan")
     }
-    binding.buildButton.isChecked = true
-    binding.messageInput.hint = getString(string.home_hint_build)
 
     binding.plusButton.contentDescription = getString(string.home_actions_title)
     binding.plusButton.setOnClickListener {
@@ -51,6 +47,32 @@ class MainFragment : Fragment() {
 
     binding.sendButton.contentDescription = getString(string.title_ai_chat_send)
     binding.sendButton.setOnClickListener { send() }
+
+    updateModeUi()
+  }
+
+  private fun setMode(next: String) {
+    mode = next
+    updateModeUi()
+  }
+
+  private fun updateModeUi() {
+    val heading = when (mode) {
+      "chat" -> string.home_chat_heading
+      "plan" -> string.home_plan_heading
+      else -> string.home_welcome
+    }
+    val hint = when (mode) {
+      "chat" -> string.home_hint_chat
+      "plan" -> string.home_hint_plan
+      else -> string.home_hint_build
+    }
+    val switchLabel = if (mode == "plan") string.home_build else string.home_plan
+
+    binding.headingText.setText(heading)
+    binding.messageInput.setHint(hint)
+    binding.modeSwitch.setText(switchLabel)
+    binding.chatChip.isChecked = mode == "chat"
   }
 
   private fun send() {
@@ -62,7 +84,7 @@ class MainFragment : Fragment() {
     val intent =
       Intent(requireActivity(), AIChatActivity::class.java).apply {
         putExtra(AIChatActivity.EXTRA_INITIAL_MESSAGE, text)
-        putExtra(AIChatActivity.EXTRA_MODE, if (buildMode) "build" else "chat")
+        putExtra(AIChatActivity.EXTRA_MODE, mode)
       }
     startActivity(intent)
   }
