@@ -28,7 +28,7 @@ import java.io.File;
 @SuppressLint("SdCardPath")
 public final class Environment {
 
-  public static final String PROJECTS_FOLDER = "HMXIDE Projects";
+  public static final String PROJECTS_FOLDER = "HMX WEB IDE";
   public static File ROOT;
   public static File HOME;
   public static File ANDROIDIDE_HOME;

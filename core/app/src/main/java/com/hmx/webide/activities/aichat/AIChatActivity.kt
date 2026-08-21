@@ -70,10 +70,20 @@ class AIChatActivity : BaseIDEActivity() {
 
     binding.toolbar.setNavigationOnClickListener { finish() }
     binding.toolbar.setOnMenuItemClickListener { item ->
-      if (item.itemId == R.id.action_config) {
-        showConfigDialog()
-        true
-      } else false
+      when (item.itemId) {
+        R.id.action_preview -> {
+          val dir = projectDir
+          if (dir != null && dir.isDirectory) {
+            startActivity(com.hmx.webide.activities.PreviewActivity.newIntent(this, dir))
+          }
+          true
+        }
+        R.id.action_config -> {
+          showConfigDialog()
+          true
+        }
+        else -> false
+      }
     }
 
     binding.plusButton.setOnClickListener {

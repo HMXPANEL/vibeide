@@ -25,7 +25,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import com.hmx.webide.app.EdgeToEdgeIDEActivity
-import com.hmx.webide.activities.editor.EditorActivityKt
+import com.hmx.webide.activities.aichat.AIChatActivity
 import com.hmx.webide.databinding.ActivityMainBinding
 import com.hmx.webide.knowledge.KnowledgeEngineImpl
 import com.hmx.webide.projects.IProjectManager
@@ -65,7 +65,9 @@ class MainActivity : EdgeToEdgeIDEActivity() {
     lifecycleScope.launch(Dispatchers.IO) {
       KnowledgeEngineImpl.refresh(root)
       withContext(Dispatchers.Main) {
-        startActivity(Intent(this@MainActivity, EditorActivityKt::class.java))
+        // Projects open into the AI Chat workspace first; the editor remains available
+        // through its existing entry points.
+        startActivity(Intent(this@MainActivity, AIChatActivity::class.java))
       }
     }
   }

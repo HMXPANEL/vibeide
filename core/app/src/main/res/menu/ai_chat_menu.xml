@@ -20,6 +20,11 @@
   xmlns:app="http://schemas.android.com/apk/res-auto">
 
   <item
+    android:id="@+id/action_preview"
+    android:title="@string/action_preview"
+    app:showAsAction="never" />
+
+  <item
     android:id="@+id/action_config"
     android:title="@string/title_ai_chat_config"
     app:showAsAction="never" />

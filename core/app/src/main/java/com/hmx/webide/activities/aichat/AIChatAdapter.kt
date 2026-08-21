@@ -18,6 +18,7 @@
 package com.hmx.webide.activities.aichat
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.hmx.webide.databinding.LayoutChatMessageBinding
@@ -48,15 +49,13 @@ class AIChatAdapter : RecyclerView.Adapter<AIChatAdapter.VH>() {
   override fun onBindViewHolder(holder: VH, position: Int) {
     val msg = items[position]
     val isUser = msg.role == "user"
-    holder.binding.messageText.text = msg.content
-    val lp = holder.binding.root.layoutParams as ViewGroup.MarginLayoutParams
-    lp.marginStart = if (isUser) 48 else 0
-    lp.marginEnd = if (isUser) 0 else 48
-    holder.binding.root.layoutParams = lp
-    val attr = if (isUser) android.R.attr.colorPrimary else android.R.attr.colorBackground
-    val ta = holder.binding.root.context.obtainStyledAttributes(intArrayOf(attr))
-    val color = ta.getColor(0, 0)
-    ta.recycle()
-    holder.binding.bubble.setCardBackgroundColor(color)
+    // User: right-aligned bubble. Assistant: plain left text, no box.
+    holder.binding.bubble.visibility = if (isUser) View.VISIBLE else View.GONE
+    holder.binding.assistantText.visibility = if (isUser) View.GONE else View.VISIBLE
+    if (isUser) {
+      holder.binding.messageText.text = msg.content
+    } else {
+      holder.binding.assistantText.text = msg.content
+    }
   }
 }
