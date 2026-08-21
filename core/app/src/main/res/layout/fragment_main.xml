@@ -91,7 +91,6 @@
 
         <ImageButton
           android:id="@+id/plusButton"
-          style="?attr/materialIconButtonStyle"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:src="@drawable/ic_add"
@@ -126,7 +125,6 @@
 
         <ImageButton
           android:id="@+id/sendButton"
-          style="?attr/materialIconButtonStyle"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:src="@drawable/ic_send"

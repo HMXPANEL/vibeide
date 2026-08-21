@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.hmx.webide.databinding.FragmentHomeActionsSheetBinding
-import com.hmx.webide.databinding.LayoutHomeActionItemBinding
 import com.hmx.webide.resources.R.drawable
 import com.hmx.webide.resources.R.string
 
@@ -31,16 +30,17 @@ class HomeActionsSheet : BottomSheetDialogFragment() {
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     super.onViewCreated(view, savedInstanceState)
 
-    setupRow(binding.rowFiles, drawable.ic_add, string.home_action_add_files)
-    setupRow(binding.rowImage, drawable.ic_image, string.home_action_add_image)
-    setupRow(binding.rowContext, drawable.ic_search, string.home_action_add_context)
-    setupRow(binding.rowAttach, drawable.ic_folder, string.home_action_attach_file)
-  }
+    binding.rowFiles.actionIcon.setImageResource(drawable.ic_add)
+    binding.rowFiles.actionLabel.setText(string.home_action_add_files)
 
-  private fun setupRow(row: View, icon: Int, label: Int) {
-    val item = LayoutHomeActionItemBinding.bind(row)
-    item.actionIcon.setImageResource(icon)
-    item.actionLabel.setText(label)
+    binding.rowImage.actionIcon.setImageResource(drawable.ic_image)
+    binding.rowImage.actionLabel.setText(string.home_action_add_image)
+
+    binding.rowContext.actionIcon.setImageResource(drawable.ic_search)
+    binding.rowContext.actionLabel.setText(string.home_action_add_context)
+
+    binding.rowAttach.actionIcon.setImageResource(drawable.ic_folder)
+    binding.rowAttach.actionLabel.setText(string.home_action_attach_file)
   }
 
   override fun onDestroyView() {

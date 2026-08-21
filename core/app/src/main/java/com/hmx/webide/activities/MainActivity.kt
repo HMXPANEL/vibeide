@@ -23,6 +23,7 @@ import android.view.View
 import androidx.core.graphics.Insets
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.lifecycleScope
 import com.hmx.webide.app.EdgeToEdgeIDEActivity
 import com.hmx.webide.activities.editor.EditorActivityKt
 import com.hmx.webide.databinding.ActivityMainBinding
