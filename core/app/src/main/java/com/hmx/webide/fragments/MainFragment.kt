@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.Fragment
 import com.hmx.webide.activities.MainActivity
 import com.hmx.webide.activities.aichat.AIChatActivity
@@ -34,11 +35,7 @@ class MainFragment : Fragment() {
     binding.menuButton.contentDescription = getString(string.home_open_menu)
     binding.menuButton.setOnClickListener { (requireActivity() as MainActivity).openDrawer() }
 
-    binding.chatChip.setOnClickListener { setMode("chat") }
-
-    binding.modeSwitch.setOnClickListener {
-      setMode(if (mode == "plan") "build" else "plan")
-    }
+    binding.modeSwitch.setOnClickListener { showModeMenu(it) }
 
     binding.plusButton.contentDescription = getString(string.home_actions_title)
     binding.plusButton.setOnClickListener {
@@ -51,9 +48,23 @@ class MainFragment : Fragment() {
     updateModeUi()
   }
 
-  private fun setMode(next: String) {
-    mode = next
-    updateModeUi()
+  private fun showModeMenu(anchor: View) {
+    PopupMenu(requireContext(), anchor).apply {
+      menu.add(0, 1, 0, string.home_build).isChecked = mode == "build"
+      menu.add(0, 2, 0, string.home_plan).isChecked = mode == "plan"
+      menu.add(0, 3, 0, string.home_chat).isChecked = mode == "chat"
+      setGroupCheckable(0, true, true)
+      setOnMenuItemClickListener { item ->
+        mode = when (item.itemId) {
+          1 -> "build"
+          2 -> "plan"
+          else -> "chat"
+        }
+        updateModeUi()
+        true
+      }
+      show()
+    }
   }
 
   private fun updateModeUi() {
@@ -67,12 +78,15 @@ class MainFragment : Fragment() {
       "plan" -> string.home_hint_plan
       else -> string.home_hint_build
     }
-    val switchLabel = if (mode == "plan") string.home_build else string.home_plan
+    val switchLabel = when (mode) {
+      "chat" -> string.home_chat
+      "plan" -> string.home_plan
+      else -> string.home_build
+    }
 
     binding.headingText.setText(heading)
     binding.messageInput.setHint(hint)
     binding.modeSwitch.setText(switchLabel)
-    binding.chatChip.isChecked = mode == "chat"
   }
 
   private fun send() {
