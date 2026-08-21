@@ -86,6 +86,7 @@
       android:layout_marginTop="2dp"
       android:singleLine="true"
       android:ellipsize="middle"
+      android:visibility="gone"
       android:textAppearance="@style/TextAppearance.Material3.BodySmall"
       android:textColor="?attr/colorOnSurfaceVariant"
       tools:text="/storage/emulated/0/Projects/MyProject" />

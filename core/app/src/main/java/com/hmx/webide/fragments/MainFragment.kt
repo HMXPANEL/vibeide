@@ -6,16 +6,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView.HORIZONTAL
 import com.hmx.webide.activities.MainActivity
 import com.hmx.webide.activities.aichat.AIChatActivity
-import com.hmx.webide.adapters.RecentProjectsAdapter
 import com.hmx.webide.databinding.FragmentMainBinding
-import com.hmx.webide.preferences.internal.GeneralPreferences
 import com.hmx.webide.resources.R.string
-import com.hmx.webide.utils.Environment
-import com.hmx.webide.utils.ProjectValidator
 import com.hmx.webide.utils.flashError
 import java.io.File
 
@@ -23,8 +17,6 @@ class MainFragment : Fragment() {
 
   private var _binding: FragmentMainBinding? = null
   private val binding get() = checkNotNull(_binding)
-
-  private val recentAdapter by lazy { RecentProjectsAdapter { openProject(it) } }
 
   private var buildMode = true
 
@@ -59,11 +51,6 @@ class MainFragment : Fragment() {
 
     binding.sendButton.contentDescription = getString(string.title_ai_chat_send)
     binding.sendButton.setOnClickListener { send() }
-
-    binding.recentProjects.layoutManager =
-      LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-    binding.recentProjects.adapter = recentAdapter
-    loadProjects()
   }
 
   private fun send() {
@@ -78,35 +65,6 @@ class MainFragment : Fragment() {
         putExtra(AIChatActivity.EXTRA_MODE, if (buildMode) "build" else "chat")
       }
     startActivity(intent)
-  }
-
-  private fun loadProjects() {
-    val recent =
-      GeneralPreferences.recentProjects
-        .filter { it.isNotBlank() && File(it).exists() }
-        .toSet()
-    val all = (recent + scanProjectsDir()).distinct()
-    recentAdapter.submit(all.map { it to (it in recent) })
-  }
-
-  private fun scanProjectsDir(): List<String> {
-    val dir = Environment.PROJECTS_DIR
-    if (!dir.isDirectory) return emptyList()
-    return dir
-      .listFiles()
-      ?.filter { it.isDirectory && ProjectValidator.isSupportedProject(it) }
-      ?.map { it.absolutePath }
-      ?.sortedBy { it.lowercase() }
-      .orEmpty()
-  }
-
-  private fun openProject(file: File) {
-    if (!ProjectValidator.isSupportedProject(file)) {
-      flashError(getString(string.msg_unsupported_project))
-      return
-    }
-    GeneralPreferences.addRecentProject(file.absolutePath)
-    (requireActivity() as MainActivity).openProject(file)
   }
 
   override fun onDestroyView() {
