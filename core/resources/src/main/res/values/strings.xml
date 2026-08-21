@@ -650,4 +650,24 @@
   <string name="msg_project_create_failed">Failed to create project</string>
   <string name="action_preview">Preview</string>
   <string name="title_choose_template">Choose a template</string>
+
+  <!-- VibeIDE Home / Sidebar / Profile -->
+  <string name="home_welcome">Tell VibeIDE what you want to build</string>
+  <string name="home_hint_build">Build me a premium movie streaming website…</string>
+  <string name="home_hint_chat">How should I structure my portfolio site?</string>
+  <string name="home_recent">Recent projects</string>
+  <string name="home_all_projects">All Projects</string>
+  <string name="home_create_new_project">Create New Project</string>
+  <string name="home_open_menu">Open projects</string>
+  <string name="home_build">Build</string>
+  <string name="home_chat">Chat</string>
+  <string name="home_profile">Profile</string>
+  <string name="home_guest_name">Guest</string>
+  <string name="home_settings">Settings</string>
+  <string name="home_actions_title">Add to your build</string>
+  <string name="home_action_add_files">Add files</string>
+  <string name="home_action_add_image">Add image</string>
+  <string name="home_action_add_context">Add context</string>
+  <string name="home_action_attach_file">Attach project file</string>
+  <string name="coming_soon">Coming soon</string>
 </resources>

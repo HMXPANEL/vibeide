@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk-auto"
+  android:id="@+id/actionRow"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:orientation="horizontal"
+  android:gravity="center_vertical"
+  android:paddingVertical="12dp"
+  android:enabled="false">
+
+  <ImageView
+    android:id="@+id/actionIcon"
+    android:layout_width="24dp"
+    android:layout_height="24dp"
+    android:src="@drawable/ic_add"
+    app:tint="?attr/colorOnSurfaceVariant" />
+
+  <TextView
+    android:id="@+id/actionLabel"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:layout_marginStart="16dp"
+    android:text="@string/home_action_add_files"
+    android:textColor="?attr/colorOnSurfaceVariant" />
+
+  <com.google.android.material.chip.Chip
+    android:id="@+id/actionTag"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="@string/coming_soon"
+    android:clickable="false"
+    android:focusable="false"
+    android:enabled="false"
+    app:chipMinHeight="24dp" />
+
+</LinearLayout>

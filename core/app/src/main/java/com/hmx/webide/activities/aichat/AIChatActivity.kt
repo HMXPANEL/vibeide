@@ -29,6 +29,8 @@ class AIChatActivity : BaseIDEActivity() {
 
   companion object {
     const val EXTRA_CURRENT_FILE = "current_file"
+    const val EXTRA_INITIAL_MESSAGE = "initial_message"
+    const val EXTRA_MODE = "mode"
   }
 
   private lateinit var binding: ActivityAiChatBinding
@@ -83,6 +85,15 @@ class AIChatActivity : BaseIDEActivity() {
       useProjectContext = isChecked
       renderContextIndicator()
       renderSuggestions()
+    }
+
+    val initialMessage = intent.getStringExtra(EXTRA_INITIAL_MESSAGE)
+    if (!initialMessage.isNullOrBlank()) {
+      binding.messageInput.setText(initialMessage)
+    }
+    if (intent.getStringExtra(EXTRA_MODE) == "chat") {
+      useProjectContext = false
+      binding.contextToggle.isChecked = false
     }
 
     if (projectDir != null) {

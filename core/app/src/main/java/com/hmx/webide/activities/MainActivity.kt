@@ -19,19 +19,15 @@ package com.hmx.webide.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.View
 import androidx.core.graphics.Insets
-import com.hmx.webide.activities.editor.EditorActivityKt
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import com.hmx.webide.app.EdgeToEdgeIDEActivity
+import com.hmx.webide.activities.editor.EditorActivityKt
 import com.hmx.webide.databinding.ActivityMainBinding
-import androidx.lifecycle.lifecycleScope
-import com.hmx.webide.preferences.internal.GeneralPreferences
-import com.hmx.webide.projects.IProjectManager
 import com.hmx.webide.knowledge.KnowledgeEngineImpl
-import com.hmx.webide.resources.R.string
-import com.hmx.webide.utils.DialogUtils
-import com.hmx.webide.utils.flashInfo
+import com.hmx.webide.projects.IProjectManager
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,16 +42,10 @@ class MainActivity : EdgeToEdgeIDEActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    openLastProject()
   }
 
   override fun onApplySystemBarInsets(insets: Insets) {
-    binding.fragmentContainersParent.setPadding(
-      insets.left,
-      0,
-      insets.right,
-      insets.bottom
-    )
+    binding.homeContent.setPadding(insets.left, insets.top, insets.right, insets.bottom)
   }
 
   override fun bindLayout(): View {
@@ -63,49 +53,11 @@ class MainActivity : EdgeToEdgeIDEActivity() {
     return binding.root
   }
 
-  private fun openLastProject() {
-    binding.root.post { tryOpenLastProject() }
-  }
+  fun openDrawer() = binding.drawer.openDrawer(GravityCompat.START)
 
-  private fun tryOpenLastProject() {
-    if (!GeneralPreferences.autoOpenProjects) {
-      return
-    }
+  fun closeDrawer() = binding.drawer.closeDrawer(GravityCompat.START)
 
-    val openedProject = GeneralPreferences.lastOpenedProject
-    if (GeneralPreferences.NO_OPENED_PROJECT == openedProject) {
-      return
-    }
-
-    if (TextUtils.isEmpty(openedProject)) {
-      app
-      flashInfo(string.msg_opened_project_does_not_exist)
-      return
-    }
-
-    val project = File(openedProject)
-    if (!project.exists()) {
-      flashInfo(string.msg_opened_project_does_not_exist)
-      return
-    }
-
-    if (GeneralPreferences.confirmProjectOpen) {
-      askProjectOpenPermission(project)
-      return
-    }
-
-    openProject(project)
-  }
-
-  private fun askProjectOpenPermission(root: File) {
-    val builder = DialogUtils.newMaterialDialogBuilder(this)
-    builder.setTitle(string.title_confirm_open_project)
-    builder.setMessage(getString(string.msg_confirm_open_project, root.absolutePath))
-    builder.setCancelable(false)
-    builder.setPositiveButton(string.yes) { _, _ -> openProject(root) }
-    builder.setNegativeButton(string.no, null)
-    builder.show()
-  }
+  fun isDrawerOpen(): Boolean = binding.drawer.isDrawerOpen(GravityCompat.START)
 
   internal fun openProject(root: File) {
     IProjectManager.getInstance().openProject(root)
@@ -115,6 +67,15 @@ class MainActivity : EdgeToEdgeIDEActivity() {
         startActivity(Intent(this@MainActivity, EditorActivityKt::class.java))
       }
     }
+  }
+
+  @Deprecated("Deprecated in Java")
+  override fun onBackPressed() {
+    if (isDrawerOpen()) {
+      closeDrawer()
+      return
+    }
+    super.onBackPressed()
   }
 
   override fun onDestroy() {

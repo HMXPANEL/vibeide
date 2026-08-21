@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk-auto"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:orientation="vertical"
+  android:padding="20dp">
+
+  <View
+    android:layout_width="40dp"
+    android:layout_height="4dp"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginBottom="16dp"
+    android:background="?attr/colorOutline"
+    android:backgroundTint="?attr/colorOnSurfaceVariant" />
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <ImageView
+      android:layout_width="44dp"
+      android:layout_height="44dp"
+      android:src="@drawable/ic_launcher_main"
+      app:tint="?attr/colorOnSurface" />
+
+    <LinearLayout
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:orientation="vertical"
+      android:layout_marginStart="14dp">
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface" />
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/home_guest_name"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+    </LinearLayout>
+  </LinearLayout>
+
+  <com.google.android.material.button.MaterialButton
+    android:id="@+id/preferencesBtn"
+    style="@style/Widget.Material3.Button.OutlinedButton"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="20dp"
+    android:text="@string/msg_preferences"
+    app:icon="@drawable/ic_settings"
+    app:iconGravity="textStart" />
+
+  <com.google.android.material.button.MaterialButton
+    android:id="@+id/settingsBtn"
+    style="@style/Widget.Material3.Button.OutlinedButton"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:text="@string/home_settings"
+    app:icon="@drawable/ic_ai_chat"
+    app:iconGravity="textStart" />
+
+</LinearLayout>
