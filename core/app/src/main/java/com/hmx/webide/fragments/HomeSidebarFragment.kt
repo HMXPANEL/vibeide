@@ -72,7 +72,7 @@ class HomeSidebarFragment : Fragment() {
       override fun afterTextChanged(s: android.text.Editable?) {}
     })
 
-    binding.filterChips.addOnButtonCheckedListener { _, _, _ -> refreshList(currentQuery()) }
+    binding.filterChips.setOnCheckedChangeListener { _, _ -> refreshList(currentQuery()) }
 
     refreshList("")
   }
