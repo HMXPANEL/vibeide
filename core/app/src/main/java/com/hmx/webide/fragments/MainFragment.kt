@@ -1,11 +1,11 @@
 package com.hmx.webide.fragments
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.Fragment
 import com.hmx.webide.activities.MainActivity
 import com.hmx.webide.activities.aichat.AIChatActivity
@@ -49,22 +49,26 @@ class MainFragment : Fragment() {
   }
 
   private fun showModeMenu(anchor: View) {
-    PopupMenu(requireContext(), anchor).apply {
-      menu.add(0, 1, 0, string.home_build).isChecked = mode == "build"
-      menu.add(0, 2, 0, string.home_plan).isChecked = mode == "plan"
-      menu.add(0, 3, 0, string.home_chat).isChecked = mode == "chat"
-      setGroupCheckable(0, true, true)
-      setOnMenuItemClickListener { item ->
-        mode = when (item.itemId) {
-          1 -> "build"
-          2 -> "plan"
+    val items = arrayOf(
+      getString(string.home_build),
+      getString(string.home_plan),
+      getString(string.home_chat)
+    )
+    val checked = when (mode) {
+      "build" -> 0
+      "plan" -> 1
+      else -> 2
+    }
+    AlertDialog.Builder(requireContext())
+      .setSingleChoiceItems(items, checked) { _, which ->
+        mode = when (which) {
+          0 -> "build"
+          1 -> "plan"
           else -> "chat"
         }
         updateModeUi()
-        true
       }
-      show()
-    }
+      .show()
   }
 
   private fun updateModeUi() {
