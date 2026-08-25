@@ -35,12 +35,7 @@
     android:enabled="false" />
 
   <include
-    android:id="@+id/rowContext"
-    layout="@layout/layout_home_action_item"
-    android:enabled="false" />
-
-  <include
-    android:id="@+id/rowAttach"
+    android:id="@+id/rowConnectors"
     layout="@layout/layout_home_action_item"
     android:enabled="false" />
 

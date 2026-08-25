@@ -672,7 +672,7 @@
   <string name="home_actions_title">Add to your build</string>
   <string name="home_action_add_files">Add files</string>
   <string name="home_action_add_image">Add image</string>
-  <string name="home_action_add_context">Add context</string>
-  <string name="home_action_attach_file">Attach project file</string>
+  <string name="home_action_connectors">Connectors</string>
+  <string name="msg_connectors_soon">Connectors are coming soon.</string>
   <string name="coming_soon">Coming soon</string>
 </resources>

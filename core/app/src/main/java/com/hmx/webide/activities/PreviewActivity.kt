@@ -165,6 +165,14 @@ class PreviewActivity : AppCompatActivity() {
     super.onBackPressed()
   }
 
+  /** Slides back to the chat screen when leaving the preview. */
+  override fun finish() {
+    super.finish()
+    overridePendingTransition(
+      com.hmx.webide.R.anim.slide_in_left,
+      com.hmx.webide.R.anim.slide_out_right)
+  }
+
   override fun onDestroy() {
     server?.stop()
     webView?.destroy()

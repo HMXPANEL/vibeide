@@ -130,6 +130,7 @@ class NewProjectActivity : EdgeToEdgeIDEActivity() {
         Intent(this@NewProjectActivity, AIChatActivity::class.java).apply {
           putExtra(AIChatActivity.EXTRA_INITIAL_MESSAGE, prompt)
           putExtra(AIChatActivity.EXTRA_MODE, mode)
+          putExtra(AIChatActivity.EXTRA_PROJECT_DIR, dir.absolutePath)
         })
       finish()
     }

@@ -66,8 +66,12 @@ class MainActivity : EdgeToEdgeIDEActivity() {
       KnowledgeEngineImpl.refresh(root)
       withContext(Dispatchers.Main) {
         // Projects open into the AI Chat workspace first; the editor remains available
-        // through its existing entry points.
-        startActivity(Intent(this@MainActivity, AIChatActivity::class.java))
+        // through its existing entry points. The dir is passed explicitly so the chat
+        // session always knows the active project.
+        startActivity(
+          Intent(this@MainActivity, AIChatActivity::class.java).apply {
+            putExtra(AIChatActivity.EXTRA_PROJECT_DIR, root.absolutePath)
+          })
       }
     }
   }
