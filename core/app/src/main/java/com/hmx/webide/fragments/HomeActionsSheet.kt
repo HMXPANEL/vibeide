@@ -1,12 +1,12 @@
 package com.hmx.webide.fragments
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.hmx.webide.databinding.FragmentHomeActionsSheetBinding
@@ -75,8 +75,7 @@ class HomeActionsSheet : BottomSheetDialogFragment() {
       runCatching {
         requireContext().contentResolver.takePersistableUriPermission(
           uri,
-          ContextCompat.FLAG_GRANT_READ_URI_PERMISSION or
-            ContextCompat.FLAG_GRANT_WRITE_URI_PERMISSION
+          Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         )
       }
     }
