@@ -144,11 +144,12 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
     }
   }
 
-  private fun isImage(uri: Uri): Boolean =
-    runCatching { contentResolver.getType(uri)?.startsWith("image/") == true }
-      .getOrDefault(false) ||
-      uri.toString().substringBefore('?').substringAfterLast('.').lowercase()
-        in setOf("png", "jpg", "jpeg", "gif", "webp", "bmp")
+  private fun isImage(uri: Uri): Boolean {
+    val mime = runCatching { contentResolver.getType(uri) }.getOrNull()
+    if (mime?.startsWith("image/") == true) return true
+    val ext = uri.toString().substringBefore('?').substringAfterLast('.').lowercase()
+    return ext in setOf("png", "jpg", "jpeg", "gif", "webp", "bmp")
+  }
 
   private fun displayName(uri: Uri): String {
     runCatching {
