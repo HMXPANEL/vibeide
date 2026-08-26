@@ -119,7 +119,11 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
     val dir = projectDir ?: return
     val history = ChatHistoryStore.load(dir)
     if (history.isEmpty()) return
-    adapter.addAll(history)
+    adapter.addAll(history.map {
+      ChatMessage(
+        if (it.role == com.hmx.webide.ai.models.Role.user) "user" else "assistant",
+        it.content)
+    })
     chatEngine.restoreHistory(history)
   }
 
