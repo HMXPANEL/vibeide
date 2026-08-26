@@ -25,9 +25,7 @@ data class HttpResponse(
 }
 
 class AiHttpClient(
-  private val connectTimeout: Long = 10_000,
-  private val readTimeout: Long = 30_000,
-  private val maxRetries: Int = 3,
+  private val maxRetries: Int = 2,
   private val baseRetryDelay: Long = 1_000,
 ) {
 
@@ -37,25 +35,53 @@ class AiHttpClient(
     config: HttpConfig,
     body: String? = null,
   ): HttpResponse = withContext(Dispatchers.IO) {
-    retry(config, body) { cfg, b -> executeSync(cfg, b) }
+    retryOnTransientError(config, body) { cfg, b -> executeSync(cfg, b) }
   }
 
   fun stream(
     config: HttpConfig,
     body: String? = null,
   ): Flow<String> = flow {
-    val attempt = retry(config, body) { cfg, b -> streamSync(cfg, b) }
+    val attempt = retryOnTransientError(config, body) { cfg, b -> streamSync(cfg, b) }
     attempt.forEach { line ->
       if (!currentCoroutineContext().isActive) return@forEach
       emit(line)
     }
   }.flowOn(Dispatchers.IO)
 
+  private suspend fun <T> retryOnTransientError(
+    config: HttpConfig,
+    body: String?,
+    block: (HttpConfig, String?) -> T,
+  ): T {
+    var lastError: Exception? = null
+    for (attempt in 0..maxRetries) {
+      try {
+        return block(config, body)
+      } catch (e: SocketTimeoutException) {
+        // Read timeout - server is slow, not a transient network error.
+        // Do NOT retry; fail fast so the task can surface a meaningful message.
+        log.warn("{} {} read timeout after {}ms, not retrying: {}",
+          config.method, config.url, attempt * baseRetryDelay, e.message)
+        throw e
+      } catch (e: Exception) {
+        lastError = e
+        if (attempt < maxRetries) {
+          val delay = baseRetryDelay * (1L shl attempt)
+          log.warn("{} {} failed (attempt {}/{}), retrying in {}ms: {}",
+            config.method, config.url, attempt + 1, maxRetries, delay, e.message)
+          delay(delay)
+        }
+      }
+    }
+    throw lastError ?: RuntimeException("Request failed after $maxRetries retries")
+  }
+
   private fun buildConnection(config: HttpConfig): java.net.HttpURLConnection {
     val url = java.net.URL(config.url)
     val conn = url.openConnection() as java.net.HttpURLConnection
-    conn.connectTimeout = connectTimeout.toInt()
-    conn.readTimeout = readTimeout.toInt()
+    conn.connectTimeout = config.connectTimeout.toInt()
+    conn.readTimeout = config.readTimeout.toInt()
     conn.requestMethod = config.method
     conn.setRequestProperty("Content-Type", "application/json")
     conn.setRequestProperty("User-Agent", "HMX-IDE/1.0")
@@ -107,27 +133,5 @@ class AiHttpClient(
         }
       }
     }
-  }
-
-  private suspend fun <T> retry(
-    config: HttpConfig,
-    body: String?,
-    block: (HttpConfig, String?) -> T,
-  ): T {
-    var lastError: Exception? = null
-    for (attempt in 0..maxRetries) {
-      try {
-        return block(config, body)
-      } catch (e: Exception) {
-        lastError = e
-        if (attempt < maxRetries) {
-          val delay = baseRetryDelay * (1L shl attempt)
-          log.warn("{} {} failed (attempt {}/{}), retrying in {}ms: {}",
-            config.method, config.url, attempt + 1, maxRetries, delay, e.message)
-          delay(delay)
-        }
-      }
-    }
-    throw lastError ?: RuntimeException("Request failed after $maxRetries retries")
   }
 }

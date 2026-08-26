@@ -58,6 +58,17 @@
     android:text="@string/action_apply_changes"
     android:visibility="gone" />
 
+  <com.google.android.material.button.MaterialButton
+    android:id="@+id/continueButton"
+    style="@style/Widget.Material3.Button.TonalButton"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="4dp"
+    android:text="@string/msg_ai_task_continue"
+    android:visibility="gone" />
+
   <!-- Bottom chat input: same compact card as Home. Plus + ... left, Build/Plan near Send right. -->
   <com.google.android.material.card.MaterialCardView
     android:id="@+id/aiCard"

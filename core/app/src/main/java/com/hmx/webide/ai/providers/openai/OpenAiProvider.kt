@@ -48,7 +48,7 @@ open class OpenAiProvider(
     val url = buildUrl(base, chatEndpointPath)
     val headers = authHeaders()
     val body = buildRequestBody(request)
-    val config = HttpConfig(url = url, method = "POST", headers = headers)
+    val config = HttpConfig(url = url, method = "POST", headers = headers, readTimeout = 600_000)
     val response = client.execute(config, body = body)
     if (response.code !in 200..299) throw mapError(response, request.model)
     return parseChatResponse(response.body)
@@ -60,7 +60,7 @@ open class OpenAiProvider(
     val headers = authHeaders()
     val streamRequest = request.copy(stream = true)
     val body = buildRequestBody(streamRequest)
-    val config = HttpConfig(url = url, method = "POST", headers = headers)
+    val config = HttpConfig(url = url, method = "POST", headers = headers, readTimeout = 600_000)
     return client.stream(config, body = body).map { line ->
       val json = JSONObject(line)
       val delta = json.optJSONObject("choices")?.optJSONObject("delta")

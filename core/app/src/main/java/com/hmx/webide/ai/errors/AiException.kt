@@ -29,5 +29,13 @@ class ProviderException(message: String, cause: Throwable? = null) :
 class StreamInterruptedException(message: String, cause: Throwable? = null) :
   AiException(message, cause)
 
+/**
+ * The AI generation exceeded the network read window. Distinct from a connectivity failure:
+ * the request was in flight but the provider was too slow, so the task is surfaced as FAILED
+ * with a Continue action rather than a silent generic "timeout".
+ */
+class GenerationTimeoutException(message: String, cause: Throwable? = null) :
+  AiException(message, cause)
+
 class ProviderConfigurationException(message: String, cause: Throwable? = null) :
   AiException(message, cause)

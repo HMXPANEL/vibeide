@@ -102,6 +102,11 @@
   <string name="msg_ai_err_bad_request">The provider rejected the request (malformed or too large). Try a shorter message.</string>
   <string name="msg_ai_err_server">The provider had a server error. Please try again shortly.</string>
   <string name="msg_ai_err_network">Could not reach the provider. Check your internet connection.</string>
+  <string name="msg_ai_err_timeout_task">The AI request timed out. Long tasks (e.g. building a website) can exceed the wait window — tap Continue to retry the task.</string>
+  <string name="msg_ai_task_continue">Continue</string>
+  <string name="msg_ai_task_running">Working…</string>
+  <string name="msg_ai_task_interrupted">Task interrupted (app closed). Tap Continue to run it again.</string>
+  <string name="msg_ai_task_blocked">A task is already running. Wait for it or tap Continue.</string>
   <string name="action_ai_chat_use_project_context">Use project context</string>
   <string name="msg_ai_chat_context_on">Project Context: ON</string>
   <string name="msg_ai_chat_context_off">Project Context: OFF</string>

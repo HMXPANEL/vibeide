@@ -3,7 +3,9 @@ package com.hmx.webide.activities
 data class HttpConfig(
   val url: String,
   val method: String = "GET",
-  val headers: Map<String, String> = emptyMap()
+  val headers: Map<String, String> = emptyMap(),
+  val connectTimeout: Int = 10_000,
+  val readTimeout: Int = 120_000
 )
 
 interface ProviderHandler {
@@ -145,13 +147,11 @@ private class CustomHandler : OpenAICompatibleHandler(
 // ---- Shared HTTP helper ----
 internal fun executeHttp(
   config: HttpConfig,
-  body: String? = null,
-  connectTimeout: Int = 10_000,
-  readTimeout: Int = 10_000,
+  body: String? = null
 ): Pair<Int, String> {
   val connection = java.net.URL(config.url).openConnection() as java.net.HttpURLConnection
-  connection.connectTimeout = connectTimeout
-  connection.readTimeout = readTimeout
+  connection.connectTimeout = config.connectTimeout
+  connection.readTimeout = config.readTimeout
   connection.requestMethod = config.method
   connection.setRequestProperty("Content-Type", "application/json")
   connection.setRequestProperty("User-Agent", "HMX-IDE/1.0")

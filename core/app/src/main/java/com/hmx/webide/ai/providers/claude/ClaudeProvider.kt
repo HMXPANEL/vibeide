@@ -41,7 +41,7 @@ class ClaudeProvider(
   override suspend fun chat(request: ChatRequest): ChatResponse {
     val url = "$baseUrl/v1/messages"
     val body = buildRequestBody(request)
-    val config = HttpConfig(url = url, method = "POST", headers = headers())
+    val config = HttpConfig(url = url, method = "POST", headers = headers(), readTimeout = 600_000)
     val response = client.execute(config, body = body)
     if (response.code !in 200..299) throw mapError(response, request.model)
     return parseChatResponse(response.body)

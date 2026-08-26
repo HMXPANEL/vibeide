@@ -25,6 +25,7 @@ import com.hmx.webide.ai.errors.ProviderConfigurationException
 import com.hmx.webide.ai.errors.ProviderException
 import com.hmx.webide.ai.errors.QuotaException
 import com.hmx.webide.ai.errors.RateLimitException
+import com.hmx.webide.ai.models.Capability
 import com.hmx.webide.app.BaseIDEActivity
 import com.hmx.webide.databinding.ActivityAiChatBinding
 import com.hmx.webide.fragments.AttachmentListener
@@ -33,11 +34,13 @@ import com.hmx.webide.projects.IProjectManager
 import com.hmx.webide.resources.R.string
 import com.hmx.webide.utils.flashError
 import com.hmx.webide.utils.flashSuccess
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.SocketTimeoutException
 
 class AIChatActivity : BaseIDEActivity(), AttachmentListener {
 
@@ -50,13 +53,15 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
 
   private lateinit var binding: ActivityAiChatBinding
   private val adapter = AIChatAdapter()
-  private val scope = CoroutineScope(Dispatchers.Main)
 
   /** Project resolved for this chat session; re-checked on every send. */
   private var projectDir: File? = null
   private var currentFile: String? = null
   private var pendingEdits = linkedMapOf<String, String>()
   private val attachments = mutableListOf<Uri>()
+
+  /** Active AI task for this project (null when idle/completed). */
+  private var activeTask: ChatTask? = null
 
   private var mode = "build"
 
@@ -103,6 +108,7 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
 
     binding.modeSwitch.setOnClickListener { showModeMenu() }
     binding.sendButton.setOnClickListener { sendMessage() }
+    binding.continueButton.setOnClickListener { continueTask() }
     updateModeUi()
 
     val initialMessage = intent.getStringExtra(EXTRA_INITIAL_MESSAGE)
@@ -118,13 +124,36 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
   private fun restorePersistedHistory() {
     val dir = projectDir ?: return
     val history = ChatHistoryStore.load(dir)
-    if (history.isEmpty()) return
-    adapter.addAll(history.map {
-      ChatMessage(
-        if (it.role == com.hmx.webide.ai.models.Role.user) "user" else "assistant",
-        it.content)
-    })
-    chatEngine.restoreHistory(history)
+    if (history.isNotEmpty()) {
+      adapter.addAll(history.map {
+        ChatMessage(
+          if (it.role == com.hmx.webide.ai.models.Role.user) "user" else "assistant",
+          it.content)
+      })
+      chatEngine.restoreHistory(history)
+    }
+
+    // Restore an in-flight / failed task so the user can continue it.
+    val task = ChatTaskStore.load(dir)
+    if (task != null && task.status != ChatTask.Status.COMPLETED) {
+      // A RUNNING/WORKING task with no live coroutine (app was killed) is treated as interrupted.
+      val restored = if (task.status == ChatTask.Status.RUNNING || task.status == ChatTask.Status.WORKING) {
+        task.copy(status = ChatTask.Status.INTERRUPTED)
+      } else task
+      activeTask = restored
+      ChatTaskStore.save(dir, restored)
+      val content = when (restored.status) {
+        ChatTask.Status.FAILED ->
+          "⚠ ${restored.error ?: getString(string.msg_ai_chat_error, "task failed")}\n\n${getString(string.msg_ai_task_continue)} to retry this task."
+        ChatTask.Status.INTERRUPTED ->
+          "⏸ ${getString(string.msg_ai_task_interrupted)}"
+        else -> restored.partial.ifBlank { getString(string.msg_ai_task_running) }
+      }
+      adapter.add(ChatMessage("assistant", content))
+      if (restored.status == ChatTask.Status.FAILED || restored.status == ChatTask.Status.INTERRUPTED) {
+        binding.continueButton.visibility = View.VISIBLE
+      }
+    }
   }
 
   private fun persistHistory() {
@@ -257,7 +286,7 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
       runCatching { File(f).toRelativeString(root) }.getOrDefault(f)
     }
 
-    scope.launch {
+    lifecycleScope.launch {
       val index = withContext(Dispatchers.IO) { ContextCache.getOrAnalyze(path) }
       systemPrompt = PromptBuilder.build(index, currentFileRel ?: currentFile)
     }
@@ -266,6 +295,14 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
   private fun sendMessage() {
     val text = binding.messageInput.text?.toString()?.trim().orEmpty()
     if (text.isBlank()) return
+
+    // One task per send: block new sends while a task is in flight (prevents duplicate requests).
+    val status = activeTask?.status
+    if (status == ChatTask.Status.RUNNING || status == ChatTask.Status.WORKING) {
+      flashError(getString(string.msg_ai_task_blocked))
+      return
+    }
+
     binding.messageInput.text?.clear()
 
     // Always re-resolve so waiting on this screen never invalidates the session.
@@ -281,7 +318,7 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
     persistHistory()
 
     if (isAnalysis && dir != null) {
-      scope.launch {
+      lifecycleScope.launch {
         adapter.add(ChatMessage("assistant", "…"))
         binding.sendButton.isEnabled = false
         val analysis = withContext(Dispatchers.IO) {
@@ -294,48 +331,119 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
       return
     }
 
-    adapter.add(ChatMessage("assistant", "…"))
+    val task = ChatTask(
+      id = "task_${System.currentTimeMillis()}",
+      prompt = fullText,
+      status = ChatTask.Status.RUNNING,
+    )
+    activeTask = task
+    dir?.let { ChatTaskStore.save(it, task) }
+    adapter.add(ChatMessage("assistant", "⏳ ${getString(string.msg_ai_task_running)}"))
+    binding.continueButton.visibility = View.GONE
     binding.sendButton.isEnabled = false
 
-    scope.launch(Dispatchers.Main) {
-      // At most one extra attempt, only for a genuine 429 carrying Retry-After.
-      var attempt = 0
-      var result = requestChat(fullText)
-      while (result.isFailure && attempt < 1) {
-        val err = result.exceptionOrNull()
-        if (err is RateLimitException && (err.retryAfterSeconds ?: 0L) > 0L) {
-          val waitSec = (err.retryAfterSeconds ?: 0L).coerceAtMost(60L)
-          adapter.setLastContent(
-            "⏳ ${getString(string.msg_ai_err_rate_limit_retry, waitSec)}")
-          kotlinx.coroutines.delay(waitSec * 1000L)
-          attempt++
-          result = requestChat(fullText)
-        } else break
-      }
+    runTask(task, fullText)
+  }
 
-      binding.sendButton.isEnabled = true
-      result.onSuccess { content ->
+  /**
+   * Runs an AI task as a streaming request so tokens arrive incrementally and a single short
+   * network read window can never abort a long generation. Updates the task state, the chat
+   * bubble, and the per-project task file as it goes.
+   */
+  private fun runTask(task: ChatTask, prompt: String) {
+    lifecycleScope.launch {
+      val accumulated = StringBuilder()
+      val onChunk: (String) -> Unit = { delta ->
+        if (delta.isEmpty()) return@onChunk
+        accumulated.append(delta)
+        activeTask = activeTask?.copy(
+          status = ChatTask.Status.WORKING,
+          partial = accumulated.toString(),
+          updatedAt = System.currentTimeMillis(),
+        )
+        projectDir?.let { ChatTaskStore.save(it, activeTask!!) }
+        adapter.setLastContent(accumulated.toString())
+      }
+      try {
+        val engine = AiFactory.engine()
+        val providerId = engine.activeProvider().providerId
+        val model = AiFactory.storage().getModel(providerId)
+        val useStream = engine.activeProvider().capabilities.contains(Capability.streaming)
+        val content = callProvider(model, prompt, useStream, onChunk)
         adapter.setLastContent(content)
+        activeTask = activeTask?.copy(
+          status = ChatTask.Status.COMPLETED, partial = content, updatedAt = System.currentTimeMillis())
+        projectDir?.let { ChatTaskStore.save(it, activeTask!!) }
         collectEdits(content)
         persistHistory()
-      }.onFailure { err ->
-        adapter.setLastContent("⚠ ${friendlyError(err)}")
-        flashError(getString(string.msg_ai_chat_error, friendlyError(err)))
+        binding.continueButton.visibility = View.GONE
+      } catch (ce: kotlinx.coroutines.CancellationException) {
+        // Lifecycle destroyed the coroutine mid-task: keep the partial result and offer Continue.
+        activeTask = activeTask?.copy(
+          status = ChatTask.Status.INTERRUPTED, partial = accumulated.toString(),
+          updatedAt = System.currentTimeMillis())
+        projectDir?.let { ChatTaskStore.save(it, activeTask!!) }
+        throw ce
+      } catch (e: Throwable) {
+        val reason = friendlyError(e)
+        adapter.setLastContent(
+          "⚠ $reason\n\n${getString(string.msg_ai_task_continue)} to retry this task.")
+        activeTask = activeTask?.copy(
+          status = ChatTask.Status.FAILED, error = reason, partial = accumulated.toString(),
+          updatedAt = System.currentTimeMillis())
+        projectDir?.let { ChatTaskStore.save(it, activeTask!!) }
+        binding.continueButton.visibility = View.VISIBLE
+        flashError(reason)
+      } finally {
+        binding.sendButton.isEnabled = true
       }
     }
   }
 
-  /** One provider call; returns failure with the accurately-mapped exception. */
-  private suspend fun requestChat(content: String): Result<String> =
-    withContext(Dispatchers.IO) {
-      runCatching {
-        val engine = AiFactory.engine()
-        val providerId = engine.activeProvider().providerId
-        val model = AiFactory.storage().getModel(providerId)
-        val response = chatEngine.send(model, content, systemPrompt)
-        response.message.content
+  /**
+   * Single provider call with at-most-one retry reserved for a genuine 429 carrying Retry-After.
+   * Streaming providers (OpenAI-compatible/OpenCode Zen) stream tokens; the fallback path uses a
+   * blocking call with the provider's long read timeout.
+   */
+  private suspend fun callProvider(
+    model: String,
+    prompt: String,
+    useStream: Boolean,
+    onChunk: (String) -> Unit,
+  ): String {
+    var attempt = 0
+    while (true) {
+      try {
+        return if (useStream) {
+          chatEngine.stream(model, prompt, systemPrompt) { chunk ->
+            if (chunk.content.isNotEmpty()) onChunk(chunk.content)
+          }.message.content
+        } else {
+          chatEngine.send(model, prompt, systemPrompt).message.content.also { onChunk(it) }
+        }
+      } catch (e: RateLimitException) {
+        if (attempt < 1 && (e.retryAfterSeconds ?: 0L) > 0L) {
+          attempt++
+          val wait = (e.retryAfterSeconds ?: 1L).coerceAtMost(60L)
+          onChunk("\n⏳ ${getString(string.msg_ai_err_rate_limit_retry, wait)}")
+          delay(wait * 1000L)
+        } else throw e
       }
     }
+  }
+
+  /** Resumes a FAILED/INTERRUPTED task from its original prompt (no duplicate in-flight request). */
+  private fun continueTask() {
+    val task = activeTask ?: return
+    if (task.status != ChatTask.Status.FAILED && task.status != ChatTask.Status.INTERRUPTED) return
+    adapter.setLastContent("⏳ ${getString(string.msg_ai_task_running)}")
+    binding.continueButton.visibility = View.GONE
+    binding.sendButton.isEnabled = false
+    val resumed = task.copy(status = ChatTask.Status.RUNNING, error = null, updatedAt = System.currentTimeMillis())
+    activeTask = resumed
+    projectDir?.let { ChatTaskStore.save(it, resumed) }
+    runTask(resumed, task.prompt)
+  }
 
   /** Human-readable message that reflects what the provider actually said. */
   private fun friendlyError(err: Throwable): String = when (err) {
@@ -346,6 +454,8 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
     is ProviderConfigurationException -> err.message ?: getString(string.msg_ai_err_bad_request)
     is ProviderException -> getString(string.msg_ai_err_bad_request)
     is NetworkException -> getString(string.msg_ai_err_network)
+    is SocketTimeoutException -> getString(string.msg_ai_err_timeout_task)
+    is java.net.ConnectException -> getString(string.msg_ai_err_network)
     else ->
       if (err is AiException) err.message ?: err.javaClass.simpleName
       else getString(string.msg_ai_chat_error, err.message ?: "unknown error")

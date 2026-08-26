@@ -50,18 +50,25 @@ class ChatEngine(
     systemPrompt: String? = null,
     onChunk: (Chunk) -> Unit = {},
   ): ChatResponse {
-    messages.add(ChatMessage(Role.user, content))
+    val userMsg = ChatMessage(Role.user, content)
+    messages.add(userMsg)
     trimHistory()
-    val request = engine.buildChatRequest(model, messages, systemPrompt, stream = true)
-    val fullContent = StringBuilder()
-    engine.stream(request).collect { chunk ->
-      fullContent.append(chunk.content)
-      onChunk(chunk)
+    try {
+      val request = engine.buildChatRequest(model, messages, systemPrompt, stream = true)
+      val fullContent = StringBuilder()
+      engine.stream(request).collect { chunk ->
+        fullContent.append(chunk.content)
+        onChunk(chunk)
+      }
+      val assistantMsg = ChatMessage(Role.assistant, fullContent.toString())
+      messages.add(assistantMsg)
+      trimHistory()
+      return ChatResponse(message = assistantMsg)
+    } catch (t: Throwable) {
+      // Keep history consistent so a caller-side retry doesn't duplicate the user turn.
+      messages.remove(userMsg)
+      throw t
     }
-    val assistantMsg = ChatMessage(Role.assistant, fullContent.toString())
-    messages.add(assistantMsg)
-    trimHistory()
-    return ChatResponse(message = assistantMsg)
   }
 
   suspend fun sendQuery(
