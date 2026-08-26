@@ -12,6 +12,9 @@ import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.net.SocketTimeoutException
+import com.hmx.webide.ai.errors.AiException
+import com.hmx.webide.ai.errors.RateLimitException
 
 data class HttpResponse(
   val code: Int,
@@ -63,6 +66,10 @@ class AiHttpClient(
         // Do NOT retry; fail fast so the task can surface a meaningful message.
         log.warn("{} {} read timeout after {}ms, not retrying: {}",
           config.method, config.url, attempt * baseRetryDelay, e.message)
+        throw e
+      } catch (e: AiException) {
+        // Already mapped by the provider (rate-limit, quota, auth, model, bad request...).
+        // These are not transient, so surface them directly instead of retrying blindly.
         throw e
       } catch (e: Exception) {
         lastError = e
@@ -121,8 +128,11 @@ class AiHttpClient(
     val code = conn.responseCode
     if (code !in 200..299) {
       val errBody = conn.errorStream?.bufferedReader()?.readText().orEmpty()
-      log.warn("{} {} → HTTP {}: {}", config.method, config.url, code, errBody)
-      return@sequence
+      // Surface the real provider error instead of streaming an empty body.
+      val retryAfter = conn.headerFields["Retry-After"]?.firstOrNull()?.toLongOrNull()
+      if (code == 429) throw RateLimitException(
+        "Provider rate limit (HTTP 429)", retryAfterSeconds = retryAfter)
+      throw java.io.IOException("HTTP $code: $errBody")
     }
     val reader = BufferedReader(InputStreamReader(conn.inputStream, Charsets.UTF_8))
     reader.use { r ->

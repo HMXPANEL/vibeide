@@ -354,15 +354,16 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
     lifecycleScope.launch {
       val accumulated = StringBuilder()
       val onChunk: (String) -> Unit = { delta ->
-        if (delta.isEmpty()) return@onChunk
-        accumulated.append(delta)
-        activeTask = activeTask?.copy(
-          status = ChatTask.Status.WORKING,
-          partial = accumulated.toString(),
-          updatedAt = System.currentTimeMillis(),
-        )
-        projectDir?.let { ChatTaskStore.save(it, activeTask!!) }
-        adapter.setLastContent(accumulated.toString())
+        if (delta.isNotEmpty()) {
+          accumulated.append(delta)
+          activeTask = activeTask?.copy(
+            status = ChatTask.Status.WORKING,
+            partial = accumulated.toString(),
+            updatedAt = System.currentTimeMillis(),
+          )
+          projectDir?.let { ChatTaskStore.save(it, activeTask!!) }
+          adapter.setLastContent(accumulated.toString())
+        }
       }
       try {
         val engine = AiFactory.engine()

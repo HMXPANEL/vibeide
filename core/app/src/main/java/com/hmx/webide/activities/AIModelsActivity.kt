@@ -187,7 +187,7 @@ class AIModelsActivity : EdgeToEdgeIDEActivity() {
       provider.id, config.method, config.url, config.headers.keys)
 
     return try {
-      val (code, _) = executeHttp(config, connectTimeout = 8000, readTimeout = 8000)
+      val (code, _) = executeHttp(config.copy(connectTimeout = 8000, readTimeout = 8000))
       log.info("Connection test response for {}: HTTP {}", provider.id, code)
 
       when (code) {
@@ -274,7 +274,7 @@ class AIModelsActivity : EdgeToEdgeIDEActivity() {
     log.info("Fetching models for {}: {} {} headers={}",
       provider.id, config.method, config.url, config.headers.keys)
 
-    val (code, response) = executeHttp(config, connectTimeout = 10000, readTimeout = 10000)
+    val (code, response) = executeHttp(config.copy(connectTimeout = 10000, readTimeout = 10000))
     if (code !in 200..299) {
       log.warn("Model fetch for {} returned HTTP {}", provider.id, code)
       return emptyList()
