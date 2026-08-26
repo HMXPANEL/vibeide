@@ -50,7 +50,7 @@ open class OpenAiProvider(
     val body = buildRequestBody(request)
     val config = HttpConfig(url = url, method = "POST", headers = headers)
     val response = client.execute(config, body = body)
-    if (response.code !in 200..299) throw mapError(response)
+    if (response.code !in 200..299) throw mapError(response, request.model)
     return parseChatResponse(response.body)
   }
 
@@ -140,13 +140,6 @@ open class OpenAiProvider(
     return list
   }
 
-  protected open fun mapError(response: HttpResponse): AiException {
-    return when (response.code) {
-      401 -> AuthenticationException("Invalid API key")
-      403 -> AuthenticationException("Forbidden — check API key permissions")
-      429 -> RateLimitException("Rate limited")
-      404 -> ModelNotFoundException("Model not found")
-      else -> NetworkException("HTTP ${response.code}: ${response.body}")
-    }
-  }
+  protected open fun mapError(response: HttpResponse, model: String?): AiException =
+    com.hmx.webide.ai.network.ProviderErrorMapper.map(displayName, model, response)
 }

@@ -94,6 +94,14 @@
   <string name="msg_ai_chat_applied">Applied %1$d file change(s) to the project.</string>
   <string name="msg_ai_chat_no_endpoint">Set an AI Chat API endpoint in the menu first.</string>
   <string name="msg_ai_chat_error">AI request failed: %1$s</string>
+  <string name="msg_ai_err_rate_limit">The provider is temporarily rate-limiting requests (per-minute limit). Your balance is fine — wait a moment and send again.</string>
+  <string name="msg_ai_err_rate_limit_retry">Provider rate limit reached — retrying in %1$d s…</string>
+  <string name="msg_ai_err_quota">The provider reports exhausted quota/balance for this account. Check the provider billing page.</string>
+  <string name="msg_ai_err_auth">Authentication failed. Check the API key in Settings → AI Providers.</string>
+  <string name="msg_ai_err_model">The selected model is not available on this provider. Pick another model in Settings.</string>
+  <string name="msg_ai_err_bad_request">The provider rejected the request (malformed or too large). Try a shorter message.</string>
+  <string name="msg_ai_err_server">The provider had a server error. Please try again shortly.</string>
+  <string name="msg_ai_err_network">Could not reach the provider. Check your internet connection.</string>
   <string name="action_ai_chat_use_project_context">Use project context</string>
   <string name="msg_ai_chat_context_on">Project Context: ON</string>
   <string name="msg_ai_chat_context_off">Project Context: OFF</string>

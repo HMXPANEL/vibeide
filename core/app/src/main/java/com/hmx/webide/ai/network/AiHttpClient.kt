@@ -16,7 +16,13 @@ import java.io.InputStreamReader
 data class HttpResponse(
   val code: Int,
   val body: String,
-)
+  /** Selected response headers (e.g. retry-after). Never contains credentials. */
+  val headers: Map<String, String> = emptyMap(),
+) {
+  /** Case-insensitive header lookup. */
+  fun header(name: String): String? =
+    headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+}
 
 class AiHttpClient(
   private val connectTimeout: Long = 10_000,
@@ -71,8 +77,13 @@ class AiHttpClient(
     } else {
       conn.errorStream?.bufferedReader()?.readText().orEmpty()
     }
+    // Keep only safe headers (no auth headers are ever echoed back here).
+    val headers = conn.headerFields.orEmpty()
+      .filterKeys { it != null && it.equals("retry-after", ignoreCase = true) }
+      .mapKeys { it.key as String }
+      .mapValues { it.value.firstOrNull().orEmpty() }
     log.debug("{} {} → HTTP {}", config.method, config.url, code)
-    return HttpResponse(code, responseBody)
+    return HttpResponse(code, responseBody, headers)
   }
 
   private fun streamSync(config: HttpConfig, body: String?): Sequence<String> = sequence {

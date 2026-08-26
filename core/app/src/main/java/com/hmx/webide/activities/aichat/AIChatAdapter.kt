@@ -34,6 +34,12 @@ class AIChatAdapter : RecyclerView.Adapter<AIChatAdapter.VH>() {
     notifyItemInserted(items.size - 1)
   }
 
+  fun addAll(history: List<ChatMessage>) {
+    if (history.isEmpty()) return
+    items.addAll(history)
+    notifyItemRangeInserted(0, items.size)
+  }
+
   fun setLastContent(content: String) {
     items.lastOrNull()?.let {
       items[items.size - 1] = it.copy(content = content)

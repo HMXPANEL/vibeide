@@ -16,18 +16,32 @@ class ChatEngine(
 
   fun history(): List<ChatMessage> = messages.toList()
 
+  /** Replaces in-memory history (used to restore a persisted project conversation). */
+  fun restoreHistory(history: List<ChatMessage>) {
+    messages.clear()
+    messages.addAll(history)
+    trimHistory()
+  }
+
   suspend fun send(
     model: String,
     content: String,
     systemPrompt: String? = null,
   ): ChatResponse {
-    messages.add(ChatMessage(Role.user, content))
+    val userMsg = ChatMessage(Role.user, content)
+    messages.add(userMsg)
     trimHistory()
-    val request = engine.buildChatRequest(model, messages, systemPrompt)
-    val response = engine.chat(request)
-    messages.add(response.message)
-    trimHistory()
-    return response
+    try {
+      val request = engine.buildChatRequest(model, messages, systemPrompt)
+      val response = engine.chat(request)
+      messages.add(response.message)
+      trimHistory()
+      return response
+    } catch (t: Throwable) {
+      // Keep history consistent so a caller-side retry doesn't duplicate the user turn.
+      messages.remove(userMsg)
+      throw t
+    }
   }
 
   suspend fun stream(

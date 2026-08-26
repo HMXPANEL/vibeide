@@ -17,6 +17,14 @@ import com.hmx.webide.ai.AiFactory
 import com.hmx.webide.ai.context.ContextCache
 import com.hmx.webide.ai.context.PromptBuilder
 import com.hmx.webide.ai.engine.ChatEngine
+import com.hmx.webide.ai.errors.AiException
+import com.hmx.webide.ai.errors.AuthenticationException
+import com.hmx.webide.ai.errors.ModelNotFoundException
+import com.hmx.webide.ai.errors.NetworkException
+import com.hmx.webide.ai.errors.ProviderConfigurationException
+import com.hmx.webide.ai.errors.ProviderException
+import com.hmx.webide.ai.errors.QuotaException
+import com.hmx.webide.ai.errors.RateLimitException
 import com.hmx.webide.app.BaseIDEActivity
 import com.hmx.webide.databinding.ActivityAiChatBinding
 import com.hmx.webide.fragments.AttachmentListener
@@ -102,7 +110,21 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
       binding.messageInput.setText(initialMessage)
     }
 
+    restorePersistedHistory()
     startProjectContext()
+  }
+
+  /** Loads this project's saved conversation into the screen and the engine context. */
+  private fun restorePersistedHistory() {
+    val dir = projectDir ?: return
+    val history = ChatHistoryStore.load(dir)
+    if (history.isEmpty()) return
+    adapter.addAll(history)
+    chatEngine.restoreHistory(history)
+  }
+
+  private fun persistHistory() {
+    projectDir?.let { ChatHistoryStore.save(it, chatEngine.history()) }
   }
 
   /**
@@ -252,6 +274,7 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
     val isAnalysis = text.lowercase().startsWith("analyze")
     adapter.add(ChatMessage("user", fullText))
     clearAttachments()
+    persistHistory()
 
     if (isAnalysis && dir != null) {
       scope.launch {
@@ -271,26 +294,57 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
     binding.sendButton.isEnabled = false
 
     scope.launch(Dispatchers.Main) {
-      val result = withContext(Dispatchers.IO) {
-        runCatching {
-          val engine = AiFactory.engine()
-          val providerId = engine.activeProvider().providerId
-          val model = AiFactory.storage().getModel(providerId)
-          // Provider-agnostic: the same request shape is used for every provider; only the
-          // optional system prompt varies.
-          val response = chatEngine.send(model, fullText, systemPrompt)
-          response.message.content
-        }
+      // At most one extra attempt, only for a genuine 429 carrying Retry-After.
+      var attempt = 0
+      var result = requestChat(fullText)
+      while (result.isFailure && attempt < 1) {
+        val err = result.exceptionOrNull()
+        if (err is RateLimitException && (err.retryAfterSeconds ?: 0L) > 0L) {
+          val waitSec = (err.retryAfterSeconds ?: 0L).coerceAtMost(60L)
+          adapter.setLastContent(
+            "⏳ ${getString(string.msg_ai_err_rate_limit_retry, waitSec)}")
+          kotlinx.coroutines.delay(waitSec * 1000L)
+          attempt++
+          result = requestChat(fullText)
+        } else break
       }
+
       binding.sendButton.isEnabled = true
       result.onSuccess { content ->
         adapter.setLastContent(content)
         collectEdits(content)
+        persistHistory()
       }.onFailure { err ->
-        adapter.setLastContent("⚠ ${err.message}")
-        flashError(getString(string.msg_ai_chat_error, err.message))
+        adapter.setLastContent("⚠ ${friendlyError(err)}")
+        flashError(getString(string.msg_ai_chat_error, friendlyError(err)))
       }
     }
+  }
+
+  /** One provider call; returns failure with the accurately-mapped exception. */
+  private suspend fun requestChat(content: String): Result<String> =
+    withContext(Dispatchers.IO) {
+      runCatching {
+        val engine = AiFactory.engine()
+        val providerId = engine.activeProvider().providerId
+        val model = AiFactory.storage().getModel(providerId)
+        val response = chatEngine.send(model, content, systemPrompt)
+        response.message.content
+      }
+    }
+
+  /** Human-readable message that reflects what the provider actually said. */
+  private fun friendlyError(err: Throwable): String = when (err) {
+    is QuotaException -> getString(string.msg_ai_err_quota)
+    is RateLimitException -> getString(string.msg_ai_err_rate_limit)
+    is AuthenticationException -> getString(string.msg_ai_err_auth)
+    is ModelNotFoundException -> getString(string.msg_ai_err_model)
+    is ProviderConfigurationException -> err.message ?: getString(string.msg_ai_err_bad_request)
+    is ProviderException -> getString(string.msg_ai_err_bad_request)
+    is NetworkException -> getString(string.msg_ai_err_network)
+    else ->
+      if (err is AiException) err.message ?: err.javaClass.simpleName
+      else getString(string.msg_ai_chat_error, err.message ?: "unknown error")
   }
 
   private fun collectEdits(content: String) {
