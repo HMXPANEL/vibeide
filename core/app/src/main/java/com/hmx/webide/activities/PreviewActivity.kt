@@ -34,7 +34,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.hmx.webide.R
 import com.hmx.webide.utils.resolveAttr
-import com.hmx.webide.web.WebPreviewServer
+import com.hmx.webide.web.ProjectPreview
 import java.io.File
 
 /**
@@ -58,7 +58,7 @@ class PreviewActivity : AppCompatActivity() {
     }
   }
 
-  private var server: WebPreviewServer? = null
+  private var preview: ProjectPreview? = null
   private var webView: WebView? = null
 
   @SuppressLint("SetJavaScriptEnabled")
@@ -69,16 +69,6 @@ class PreviewActivity : AppCompatActivity() {
     if (projectDir == null || !projectDir.isDirectory) {
       finish()
       return
-    }
-
-    val hasEntry = File(projectDir, "index.html").isFile ||
-      projectDir.listFiles { f -> f.isFile && f.extension.equals("html", true) }?.isNotEmpty() == true
-    if (!hasEntry) {
-      android.widget.Toast.makeText(
-        this,
-        "Preview couldn't load this project: no HTML entry file was found in ${projectDir.name}.",
-        android.widget.Toast.LENGTH_LONG
-      ).show()
     }
 
     val root = LinearLayout(this).apply {
@@ -138,15 +128,28 @@ class PreviewActivity : AppCompatActivity() {
     root.addView(webView)
     setContentView(root)
 
-    val server = WebPreviewServer(projectDir)
-    this.server = server
+    val preview = ProjectPreview(projectDir)
+    this.preview = preview
     Thread {
-      val port = server.start()
+      val result = preview.prepare()
       runOnUiThread {
-        webView.loadUrl("http://127.0.0.1:$port/")
+        when {
+          result.url != null -> webView.loadUrl(result.url)
+          result.error != null -> webView.loadData(errorPage(result.error), "text/html", "utf-8")
+          else -> webView.loadData(errorPage("Preview could not be started."), "text/html", "utf-8")
+        }
       }
     }.start()
   }
+
+  private fun errorPage(message: String): String =
+    """<html><head><meta charset="utf-8"><style>
+      body{font-family:sans-serif;background:#111;color:#eee;padding:24px}
+      h2{color:#ff8a80}.msg{max-width:640px;line-height:1.5}
+      </style></head><body>
+      <h2>Preview unavailable</h2>
+      <p class="msg">${message.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")}</p>
+      </body></html>"""
 
   private fun iconButton(@androidx.annotation.DrawableRes iconRes: Int, tint: Int,
     onClick: () -> Unit
@@ -184,7 +187,8 @@ class PreviewActivity : AppCompatActivity() {
   }
 
   override fun onDestroy() {
-    server?.stop()
+    preview?.stop()
+    preview = null
     webView?.destroy()
     webView = null
     super.onDestroy()

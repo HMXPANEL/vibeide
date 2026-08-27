@@ -29,11 +29,13 @@ interface AiProvider {
     messages: List<ChatMessage>,
     systemPrompt: String? = null,
     stream: Boolean = false,
+    tools: List<com.hmx.webide.ai.models.Tool> = emptyList(),
   ): ChatRequest = ChatRequest(
     model = model,
     messages = messages,
     systemPrompt = systemPrompt,
     stream = stream,
+    tools = tools,
   )
 
   fun handleError(throwable: Throwable): AiException =

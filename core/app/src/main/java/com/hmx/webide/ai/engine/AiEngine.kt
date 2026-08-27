@@ -70,5 +70,6 @@ class AiEngine(
     messages: List<ChatMessage>,
     systemPrompt: String? = null,
     stream: Boolean = false,
-  ): ChatRequest = activeProvider().buildChatRequest(model, messages, systemPrompt, stream)
+    tools: List<com.hmx.webide.ai.models.Tool> = emptyList(),
+  ): ChatRequest = activeProvider().buildChatRequest(model, messages, systemPrompt, stream, tools)
 }

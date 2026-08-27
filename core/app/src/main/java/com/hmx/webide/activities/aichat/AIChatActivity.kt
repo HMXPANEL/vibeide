@@ -26,6 +26,9 @@ import com.hmx.webide.ai.errors.ProviderException
 import com.hmx.webide.ai.errors.QuotaException
 import com.hmx.webide.ai.errors.RateLimitException
 import com.hmx.webide.ai.models.Capability
+import com.hmx.webide.ai.models.Tool
+import com.hmx.webide.ai.models.ToolParameter
+import com.hmx.webide.ai.tools.ProjectFileOps
 import com.hmx.webide.app.BaseIDEActivity
 import com.hmx.webide.databinding.ActivityAiChatBinding
 import com.hmx.webide.fragments.AttachmentListener
@@ -64,6 +67,33 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
   private var activeTask: ChatTask? = null
 
   private var mode = "build"
+
+  /** File-operation tools exposed to the AI. The app executes them, not a text parser. */
+  private val tools = listOf(
+    Tool(
+      "read_file",
+      "Read a project file by relative path to inspect existing code.",
+      listOf(ToolParameter("path", "string", "Relative path, e.g. src/main.js", true)),
+    ),
+    Tool(
+      "write_file",
+      "Create or overwrite a project file with the given content. Use this to build or edit the project.",
+      listOf(
+        ToolParameter("path", "string", "Relative path, e.g. index.html or src/style.css", true),
+        ToolParameter("content", "string", "Full new file content", true),
+      ),
+    ),
+    Tool(
+      "list_files",
+      "List files in a project directory to understand the layout.",
+      listOf(ToolParameter("path", "string", "Relative directory path, defaults to project root", false)),
+    ),
+    Tool(
+      "delete_file",
+      "Delete a project file when explicitly required.",
+      listOf(ToolParameter("path", "string", "Relative path of the file to delete", true)),
+    ),
+  )
 
   private val chatEngine by lazy { ChatEngine(AiFactory.engine()) }
 
@@ -367,13 +397,24 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
       }
       try {
         val engine = AiFactory.engine()
-        val providerId = engine.activeProvider().providerId
+        val provider = engine.activeProvider()
+        val providerId = provider.providerId
         val model = AiFactory.storage().getModel(providerId)
-        val useStream = engine.activeProvider().capabilities.contains(Capability.streaming)
-        val content = callProvider(model, prompt, useStream, onChunk)
+        val useStream = provider.capabilities.contains(Capability.streaming)
+        val dir = projectDir ?: resolveProject()
+        val fileOps = dir?.let { ProjectFileOps(it) }
+        // Build/Plan use real file-operation tools (app-controlled writes). Chat stays conversational.
+        val content = if (fileOps != null && mode != "chat" && provider.capabilities.contains(Capability.tools)) {
+          chatEngine.runWithTools(model, prompt, systemPrompt, tools, onChunk) { call -> fileOps.dispatch(call) }
+            .message.content
+        } else {
+          callProvider(model, prompt, useStream, onChunk)
+        }
         collectEdits(content)
-        // Build mode turns the AI's file edits into real project files so Preview reflects them.
-        val finalContent = if (mode == "build" && pendingEdits.isNotEmpty()) {
+        // Prefer tool-based writes; fall back to the legacy [[WRITE:]] format only if nothing was written.
+        val finalContent = if (mode == "build" && fileOps != null && fileOps.changedFiles > 0) {
+          "$content\n\n✅ Applied ${fileOps.changedFiles} file change(s) to this project. Open Preview to see the result."
+        } else if (mode == "build" && pendingEdits.isNotEmpty()) {
           val n = pendingEdits.size
           applyEdits()
           "$content\n\n✅ Applied $n file change(s) to this project. Open Preview to see the result."
