@@ -135,13 +135,18 @@ class AiHttpClient(
       throw java.io.IOException("HTTP $code: $errBody")
     }
     val reader = BufferedReader(InputStreamReader(conn.inputStream, Charsets.UTF_8))
-    reader.use { r ->
-      r.lineSequence().forEach { line ->
-        if (line.startsWith("data: ")) {
-          val data = line.removePrefix("data: ").trim()
-          if (data != "[DONE]") yield(data)
-        }
-      }
+    val raw = reader.use { it.readText() }
+    val dataLines = raw.lineSequence()
+      .filter { it.startsWith("data: ") }
+      .map { it.removePrefix("data: ").trim() }
+      .filter { it != "[DONE]" }
+      .toList()
+    if (dataLines.isNotEmpty()) {
+      dataLines.forEach { yield(it) }
+    } else if (raw.isNotBlank()) {
+      // Provider returned a single raw JSON body (no SSE framing): surface it whole
+      // so the reply is never silently dropped.
+      yield(raw.trim())
     }
   }
 }

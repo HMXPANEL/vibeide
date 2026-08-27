@@ -71,6 +71,16 @@ class PreviewActivity : AppCompatActivity() {
       return
     }
 
+    val hasEntry = File(projectDir, "index.html").isFile ||
+      projectDir.listFiles { f -> f.isFile && f.extension.equals("html", true) }?.isNotEmpty() == true
+    if (!hasEntry) {
+      android.widget.Toast.makeText(
+        this,
+        "Preview couldn't load this project: no HTML entry file was found in ${projectDir.name}.",
+        android.widget.Toast.LENGTH_LONG
+      ).show()
+    }
+
     val root = LinearLayout(this).apply {
       orientation = LinearLayout.VERTICAL
       setBackgroundColor(resolveAttr(R.attr.colorSurface))

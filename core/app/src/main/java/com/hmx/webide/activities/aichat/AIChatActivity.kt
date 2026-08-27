@@ -371,11 +371,19 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
         val model = AiFactory.storage().getModel(providerId)
         val useStream = engine.activeProvider().capabilities.contains(Capability.streaming)
         val content = callProvider(model, prompt, useStream, onChunk)
-        adapter.setLastContent(content)
-        activeTask = activeTask?.copy(
-          status = ChatTask.Status.COMPLETED, partial = content, updatedAt = System.currentTimeMillis())
-        projectDir?.let { ChatTaskStore.save(it, activeTask!!) }
         collectEdits(content)
+        // Build mode turns the AI's file edits into real project files so Preview reflects them.
+        val finalContent = if (mode == "build" && pendingEdits.isNotEmpty()) {
+          val n = pendingEdits.size
+          applyEdits()
+          "$content\n\n✅ Applied $n file change(s) to this project. Open Preview to see the result."
+        } else {
+          content
+        }
+        adapter.setLastContent(finalContent)
+        activeTask = activeTask?.copy(
+          status = ChatTask.Status.COMPLETED, partial = finalContent, updatedAt = System.currentTimeMillis())
+        projectDir?.let { ChatTaskStore.save(it, activeTask!!) }
         persistHistory()
         binding.continueButton.visibility = View.GONE
       } catch (ce: kotlinx.coroutines.CancellationException) {

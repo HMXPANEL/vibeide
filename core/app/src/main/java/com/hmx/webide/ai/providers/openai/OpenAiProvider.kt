@@ -61,13 +61,14 @@ open class OpenAiProvider(
     val streamRequest = request.copy(stream = true)
     val body = buildRequestBody(streamRequest)
     val config = HttpConfig(url = url, method = "POST", headers = headers, readTimeout = 600_000)
-    return client.stream(config, body = body).map { line ->
-      val json = JSONObject(line)
-      val delta = json.optJSONObject("choices")?.optJSONObject("delta")
-      val content = delta?.optString("content", "") ?: ""
-      val finish = json.optJSONObject("choices")?.optString("finish_reason")
-      Chunk(content = content, finishReason = finish)
-    }
+      return client.stream(config, body = body).map { line ->
+        val json = JSONObject(line)
+        val choice = json.optJSONArray("choices")?.optJSONObject(0)
+        val delta = choice?.optJSONObject("delta")
+        val content = delta?.optString("content", "") ?: ""
+        val finish = choice?.optString("finish_reason")
+        Chunk(content = content, finishReason = finish)
+      }
   }
 
   override suspend fun listModels(): List<AiModel> {
