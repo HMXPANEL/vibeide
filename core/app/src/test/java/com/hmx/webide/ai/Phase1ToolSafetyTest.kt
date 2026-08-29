@@ -1,6 +1,7 @@
 package com.hmx.webide.ai
 
 import com.google.common.truth.Truth.assertThat
+import com.hmx.webide.ai.engine.AiEngine
 import com.hmx.webide.ai.engine.ChatEngine
 import com.hmx.webide.ai.engine.retryOnceOnRateLimit
 import com.hmx.webide.ai.errors.AuthenticationException
