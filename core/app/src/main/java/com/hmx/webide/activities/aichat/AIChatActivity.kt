@@ -17,6 +17,7 @@ import com.hmx.webide.ai.AiFactory
 import com.hmx.webide.ai.context.ContextCache
 import com.hmx.webide.ai.context.PromptBuilder
 import com.hmx.webide.ai.engine.ChatEngine
+import com.hmx.webide.ai.engine.retryOnceOnRateLimit
 import com.hmx.webide.ai.errors.AiException
 import com.hmx.webide.ai.errors.AuthenticationException
 import com.hmx.webide.ai.errors.ModelNotFoundException
@@ -460,25 +461,15 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
     prompt: String,
     useStream: Boolean,
     onChunk: (String) -> Unit,
-  ): String {
-    var attempt = 0
-    while (true) {
-      try {
-        return if (useStream) {
-          chatEngine.stream(model, prompt, systemPrompt) { chunk ->
-            if (chunk.content.isNotEmpty()) onChunk(chunk.content)
-          }.message.content
-        } else {
-          chatEngine.send(model, prompt, systemPrompt).message.content.also { onChunk(it) }
-        }
-      } catch (e: RateLimitException) {
-        if (attempt < 1 && (e.retryAfterSeconds ?: 0L) > 0L) {
-          attempt++
-          val wait = (e.retryAfterSeconds ?: 1L).coerceAtMost(60L)
-          onChunk("\n⏳ ${getString(string.msg_ai_err_rate_limit_retry, wait)}")
-          delay(wait * 1000L)
-        } else throw e
-      }
+  ): String = retryOnceOnRateLimit(
+    onRetry = { wait -> onChunk("\n⏳ ${getString(string.msg_ai_err_rate_limit_retry, wait)}") }
+  ) {
+    if (useStream) {
+      chatEngine.stream(model, prompt, systemPrompt) { chunk ->
+        if (chunk.content.isNotEmpty()) onChunk(chunk.content)
+      }.message.content
+    } else {
+      chatEngine.send(model, prompt, systemPrompt).message.content.also { onChunk(it) }
     }
   }
 

@@ -12,7 +12,7 @@ import com.hmx.webide.ai.registry.ProviderRegistry
 import com.hmx.webide.ai.storage.ProviderStorage
 import kotlinx.coroutines.flow.Flow
 
-class AiEngine(
+open class AiEngine(
   private val storage: ProviderStorage? = null,
 ) {
 
@@ -47,7 +47,7 @@ class AiEngine(
     return provider.chat(request)
   }
 
-  fun stream(request: ChatRequest): Flow<Chunk> {
+  open fun stream(request: ChatRequest): Flow<Chunk> {
     val provider = activeProvider()
     validateConfig(provider)
     return provider.stream(request)
@@ -65,7 +65,7 @@ class AiEngine(
     storage?.setActiveProviderId(providerId)
   }
 
-  fun buildChatRequest(
+  open fun buildChatRequest(
     model: String,
     messages: List<ChatMessage>,
     systemPrompt: String? = null,
