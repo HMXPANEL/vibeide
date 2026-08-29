@@ -153,7 +153,7 @@ class Phase1ToolSafetyTest {
       systemPrompt: String?,
       stream: Boolean,
       tools: List<Tool>,
-    ): ChatRequest = ChatRequest(model, messages, systemPrompt, stream, tools)
+    ): ChatRequest = ChatRequest(model = model, messages = messages, systemPrompt = systemPrompt, stream = stream, tools = tools)
 
     override fun stream(request: ChatRequest): Flow<Chunk> = onStream(request)
   }
