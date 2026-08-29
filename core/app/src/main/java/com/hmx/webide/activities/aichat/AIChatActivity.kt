@@ -27,9 +27,8 @@ import com.hmx.webide.ai.errors.ProviderException
 import com.hmx.webide.ai.errors.QuotaException
 import com.hmx.webide.ai.errors.RateLimitException
 import com.hmx.webide.ai.models.Capability
-import com.hmx.webide.ai.models.Tool
-import com.hmx.webide.ai.models.ToolParameter
 import com.hmx.webide.ai.tools.ProjectFileOps
+import com.hmx.webide.ai.tools.ToolRegistry
 import com.hmx.webide.app.BaseIDEActivity
 import com.hmx.webide.databinding.ActivityAiChatBinding
 import com.hmx.webide.fragments.AttachmentListener
@@ -68,33 +67,6 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
   private var activeTask: ChatTask? = null
 
   private var mode = "build"
-
-  /** File-operation tools exposed to the AI. The app executes them, not a text parser. */
-  private val tools = listOf(
-    Tool(
-      "read_file",
-      "Read a project file by relative path to inspect existing code.",
-      listOf(ToolParameter("path", "string", "Relative path, e.g. src/main.js", true)),
-    ),
-    Tool(
-      "write_file",
-      "Create or overwrite a project file with the given content. Use this to build or edit the project.",
-      listOf(
-        ToolParameter("path", "string", "Relative path, e.g. index.html or src/style.css", true),
-        ToolParameter("content", "string", "Full new file content", true),
-      ),
-    ),
-    Tool(
-      "list_files",
-      "List files in a project directory to understand the layout.",
-      listOf(ToolParameter("path", "string", "Relative directory path, defaults to project root", false)),
-    ),
-    Tool(
-      "delete_file",
-      "Delete a project file when explicitly required.",
-      listOf(ToolParameter("path", "string", "Relative path of the file to delete", true)),
-    ),
-  )
 
   private val chatEngine by lazy { ChatEngine(AiFactory.engine()) }
 
@@ -406,7 +378,7 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
         val fileOps = dir?.let { ProjectFileOps(it) }
         // Build/Plan use real file-operation tools (app-controlled writes). Chat stays conversational.
         val content = if (fileOps != null && mode != "chat" && provider.capabilities.contains(Capability.tools)) {
-          chatEngine.runWithTools(model, prompt, systemPrompt, tools, onChunk) { call -> fileOps.dispatch(call) }
+          chatEngine.runWithTools(model, prompt, systemPrompt, ToolRegistry.tools(), onChunk) { call -> fileOps.dispatch(call) }
             .message.content
         } else {
           callProvider(model, prompt, useStream, onChunk)
@@ -514,22 +486,18 @@ class AIChatActivity : BaseIDEActivity(), AttachmentListener {
 
   private fun applyEdits() {
     val root = projectDir ?: resolveProject() ?: return
-    val canonicalRoot = runCatching { root.canonicalPath }.getOrNull() ?: return
+    val fileOps = ProjectFileOps(root)
     var count = 0
+    var blocked = 0
     pendingEdits.forEach { (rel, content) ->
-      runCatching {
-        val file = File(root, rel)
-        val canonicalFile = file.canonicalPath
-        if (!canonicalFile.startsWith(canonicalRoot + File.separator) && canonicalFile != canonicalRoot) {
-          return@forEach
-        }
-        file.parentFile?.mkdirs()
-        file.writeText(content)
-        count++
-      }
+      if (fileOps.applyEdit(rel, content).isError) blocked++ else count++
     }
     pendingEdits.clear()
     binding.applyChanges.visibility = View.GONE
-    flashSuccess(getString(string.msg_ai_chat_applied, count))
+    if (blocked > 0) {
+      flashError("Applied $count file(s); blocked $blocked protected file(s) by the write policy")
+    } else {
+      flashSuccess(getString(string.msg_ai_chat_applied, count))
+    }
   }
 }
