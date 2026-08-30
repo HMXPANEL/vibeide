@@ -16,7 +16,7 @@ data class ScanResult(
 
 object ProjectScanner {
 
-  val WEB_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "cjs", "json", "md", "txt", "yml", "yaml", "ts", "tsx", "jsx", "vue", "svg")
+  val WEB_EXTENSIONS = setOf("html", "htm", "css", "js", "mjs", "cjs", "json", "md", "txt", "yml", "yaml", "ts", "tsx", "jsx", "svg")
 
   private val SKIP_DIRS = setOf("build", ".git", ".gradle", "bin", "obj", "node_modules", "cmake-build-debug", ".idea", "dist")
 

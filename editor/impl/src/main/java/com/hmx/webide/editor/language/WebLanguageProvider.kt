@@ -18,7 +18,6 @@ object WebLanguageProvider {
     "ts" to "typescript",
     "tsx" to "typescript",
     "jsx" to "javascript",
-    "vue" to "html",
     "md" to "markdown",
     "markdown" to "markdown",
   )

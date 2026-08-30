@@ -36,13 +36,15 @@ class FileWriteGate(private val root: File) {
   }
 
   companion object {
-    // ponytail: starter deny-list; expand when a real config file is being clobbered.
+    // ponytail: V1 scope — only block out-of-scope tech, secrets, and VCS metadata.
+    // npm is the only package manager, so package.json / package-lock.json / vite /
+    // tsconfig / tailwind / postcss / .npmrc / .editorconfig / .gitignore are normal
+    // project files the AI must be free to create and edit.
     private val PROTECTED = listOf(
-      Regex("""^(package\.json|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|npm-shrinkwrap\.json|bun\.lockb)$"""),
       Regex("""^\.env.*$"""),
-      Regex("""^(tsconfig|vite\.config|webpack\.config|next\.config|babel\.config|tailwind\.config|postcss\.config|rollup\.config)(\..*)?$"""),
-      Regex("""^\.(eslintrc|prettierrc|npmrc|yarnrc|editorconfig|gitignore)$"""),
-      Regex("""^(vercel\.json|netlify\.toml|now\.json|firebase\.json|angular\.json)$"""),
+      Regex("""^(next\.config|angular\.json|webpack\.config|rollup\.config|babel\.config|vercel\.json|netlify\.toml|now\.json|firebase\.json)(\..*)?$"""),
+      Regex("""^\.(eslintrc|prettierrc)$"""),
+      Regex("""^(yarn\.lock|pnpm-lock\.yaml|bun\.lockb|npm-shrinkwrap\.json)$"""),
       Regex(""".*\.git(?:/.*)?$"""),
     )
   }
