@@ -44,6 +44,16 @@ object ToolRegistry {
       readOnly = false,
       dangerous = true,
     ),
+    ToolDefinition(
+      name = "run_command",
+      description = "Run a shell command in the project directory (e.g. npm install, npm run dev, node -v). Use only when file tools cannot accomplish the task.",
+      parameters = listOf(
+        ToolParameter("command", "string", "The shell command to execute, e.g. 'npm install' or 'npm run build'", true),
+      ),
+      readOnly = false,
+      dangerous = true,
+      timeoutMs = 120_000,
+    ),
   )
 
   private val byName = definitions.associateBy { it.name }

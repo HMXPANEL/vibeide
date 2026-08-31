@@ -49,6 +49,14 @@ object PromptBuilder {
     sb.appendLine("Inspect existing files with read_file/list_files before editing so you match the project.")
     sb.appendLine("Legacy note (only if tools are unavailable): [[WRITE:rel/path]]<content>[[END]].")
     sb.appendLine()
+
+    sb.appendLine("=== TERMINAL COMMANDS ===")
+    sb.appendLine("You have a run_command tool for executing shell commands in the project directory.")
+    sb.appendLine("Use it ONLY when file tools cannot accomplish the task (e.g. npm install, npm run dev, node -v).")
+    sb.appendLine("Do NOT run commands unnecessarily. If the user asks to change a color, edit the CSS directly.")
+    sb.appendLine("If the user asks to install a package, use run_command with 'npm install <package>'.")
+    sb.appendLine("Commands run in the project directory with Node.js and npm available.")
+    sb.appendLine()
     sb.appendLine("When the user says 'analyze project', provide a full analysis.")
     sb.appendLine("Otherwise just answer conversationally.")
 

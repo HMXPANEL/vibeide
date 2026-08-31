@@ -2,6 +2,7 @@ package com.hmx.webide.web
 
 import com.hmx.webide.ai.context.WebProjectDetector
 import com.hmx.webide.ai.context.WebProjectType
+import com.hmx.webide.ai.terminal.RuntimeManager
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -53,20 +54,29 @@ class ProjectPreview(private val projectDir: File) {
   }
 
   private fun startDevServer(): Result {
-    val node = findExecutable("node")
-      ?: return Result(null, Kind.DEV_SERVER,
-        "Could not start the dev server: Node.js was not found in this environment. " +
-          "Vite/React projects require a dev server to run.")
-    val npm = findExecutable("npm")
-    val script = pickScript()
-    val command = if (npm != null && script != null) "npm run $script" else null
-    if (command == null) {
+    if (!RuntimeManager.isInstalled()) {
       return Result(null, Kind.DEV_SERVER,
+        "Node.js runtime is not installed. Install it from Settings → Web Runtime to run Vite/React projects.")
+    }
+    val script = pickScript()
+      ?: return Result(null, Kind.DEV_SERVER,
         "package.json was found but the project type is not currently supported " +
           "(no dev/preview/start script).")
-    }
+    val command = "npm run $script"
     val process = try {
-      ProcessBuilder("sh", "-c", command).directory(projectDir)
+      val nodeBin = RuntimeManager.nodeBinary().absolutePath
+      val npmBin = RuntimeManager.npmBinary().absolutePath
+      val runtimeBin = File(RuntimeManager.runtimePath(), "bin").absolutePath
+      val systemPath = System.getenv("PATH") ?: "/usr/local/bin:/usr/bin:/bin"
+      val env = mapOf(
+        "PATH" to "$runtimeBin:$systemPath",
+        "HOME" to RuntimeManager.runtimePath().absolutePath,
+        "NODE" to nodeBin,
+        "npm_config_cache" to RuntimeManager.cachePath().absolutePath,
+      )
+      ProcessBuilder("sh", "-c", command)
+        .directory(projectDir)
+        .apply { environment().putAll(env) }
         .redirectErrorStream(true).start()
     } catch (e: Throwable) {
       return Result(null, Kind.DEV_SERVER,
@@ -119,16 +129,5 @@ class ProjectPreview(private val projectDir: File) {
       Thread.sleep(400)
     }
     return found.get()
-  }
-
-  private fun findExecutable(name: String): String? {
-    val p = runCatching {
-      Runtime.getRuntime().exec(arrayOf("sh", "-c", "command -v $name")).let { proc ->
-        val out = proc.inputStream.bufferedReader().readText().trim()
-        proc.waitFor()
-        out
-      }
-    }.getOrElse { return null }
-    return p.takeIf { it.isNotBlank() }
   }
 }

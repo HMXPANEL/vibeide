@@ -136,6 +136,7 @@ class IDEApplication : BaseApplication() {
     AiFactory.init(this)
     MemoryService.init(this)
     ContextManager.init()
+    com.hmx.webide.ai.terminal.RuntimeManager.init(this)
     KnowledgeEngineImpl.start()
     registerComponentCallbacks(object : android.content.ComponentCallbacks2 {
       override fun onTrimMemory(level: Int) {

@@ -21,11 +21,12 @@ class Phase2ToolSystemTest {
     return dir
   }
 
-  @Test fun registryHasFourFileTools() {
+  @Test fun registryHasFiveTools() {
     val tools = ToolRegistry.tools()
-    assertEquals(4, tools.size)
+    assertEquals(5, tools.size)
     assertTrue(tools.any { it.name == "write_file" })
     assertTrue(tools.any { it.name == "read_file" })
+    assertTrue(tools.any { it.name == "run_command" })
   }
 
   @Test fun registryUnknownToolIsAbsent() {

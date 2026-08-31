@@ -1,6 +1,7 @@
 package com.hmx.webide.ai.tools
 
 import com.hmx.webide.ai.models.ToolCall
+import com.hmx.webide.ai.terminal.TerminalEngine
 import org.json.JSONObject
 import java.io.File
 
@@ -33,6 +34,7 @@ class ProjectFileOps(private val root: File) {
         "write_file" -> write(args.getString("path"), args.optString("content", ""))
         "list_files" -> list(args.optString("path", "."))
         "delete_file" -> delete(args.getString("path"))
+        "run_command" -> runCommand(args.getString("command"))
         else -> ToolResult.error("UNKNOWN_TOOL", "unknown tool '${call.name}'")
       }
     }.getOrElse { ToolResult.error("INTERNAL", "Error: ${it.message ?: it.javaClass.simpleName}") }
@@ -100,5 +102,9 @@ class ProjectFileOps(private val root: File) {
         ToolResult.ok("Wrote ${content.length} chars to $rel")
       }
     }
+  }
+
+  private fun runCommand(command: String): ToolResult {
+    return TerminalEngine.execute(command, root)
   }
 }
