@@ -43,6 +43,8 @@ android {
   defaultConfig {
     applicationId = BuildConfig.packageName
     vectorDrawables.useSupportLibrary = true
+    // PRoot native runtime is arm64-v8a only; RuntimeCompatibility.kt enforces at runtime
+    ndk.abiFilters += "arm64-v8a"
   }
 
   androidResources {
