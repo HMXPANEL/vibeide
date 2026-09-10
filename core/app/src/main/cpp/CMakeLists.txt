@@ -1,25 +1,5 @@
-/*
- * Copyright (c) 2024 Mobile Harness Contributors
- * Copyright (c) 2024 VibeIDE Contributors
- *
- * This file is part of VibeIDE.
- *
- * Ported from Mobile-Harness (https://github.com/techjarves/Mobile-Harness)
- * Original: app/src/main/cpp/CMakeLists.txt
- *
- * VibeIDE is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * VibeIDE is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with VibeIDE.  If not, see <https://www.gnu.org/licenses/>.
- */
+# Ported from Mobile-Harness (https://github.com/techjarves/Mobile-Harness)
+# Original: app/src/main/cpp/CMakeLists.txt
 
 cmake_minimum_required(VERSION 3.22.1)
 project(vibeide_native C ASM)
@@ -29,7 +9,7 @@ if(NOT ANDROID_ABI STREQUAL "arm64-v8a")
     message(FATAL_ERROR "VibeIDE native runtime currently supports only arm64-v8a")
 endif()
 
-set(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../..")
+set(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../..")
 set(PROOT_ROOT "${PROJECT_ROOT}/third_party/proot/src")
 set(SHM_ROOT "${PROJECT_ROOT}/third_party/libandroid-shmem")
 set(TALLOC_ROOT "${PROJECT_ROOT}/third_party/proot/src/libtalloc")
