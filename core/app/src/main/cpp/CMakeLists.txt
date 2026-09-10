@@ -12,7 +12,7 @@ endif()
 set(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../..")
 set(PROOT_ROOT "${PROJECT_ROOT}/third_party/proot/src")
 set(SHM_ROOT "${PROJECT_ROOT}/third_party/libandroid-shmem")
-set(TALLOC_ROOT "${PROJECT_ROOT}/third_party/proot/src/libtalloc")
+set(TALLOC_ROOT "${PROJECT_ROOT}/third_party/talloc")
 
 # pocketspawn - the JNI process bridge
 add_library(pocketspawn SHARED pocket_spawn.c)
