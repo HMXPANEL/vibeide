@@ -49,6 +49,14 @@ android {
     generateLocaleConfig = true
   }
 
+  // Native build configuration for PRoot runtime
+  externalNativeBuild {
+    cmake {
+      path "src/main/cpp/CMakeLists.txt"
+      version "3.22.1"
+    }
+  }
+
   buildTypes {
     release {
       isShrinkResources = true

@@ -1,0 +1,65 @@
+VibeIDE Native Runtime Components - MIT License
+
+The following files in VibeIDE were ported from Mobile-Harness
+(https://github.com/techjarves/Mobile-Harness) under the MIT License:
+
+- core/app/src/main/cpp/pocket_spawn.c
+- core/app/src/main/cpp/pocket_launcher.c
+- core/app/src/main/cpp/executable_carrier.c
+- core/app/src/main/cpp/CMakeLists.txt
+- core/app/src/main/cpp/GenerateLoaderInfo.cmake
+- core/app/src/main/java/com/hmx/webide/ai/terminal/NativeSpawnProcess.kt
+- core/app/src/main/java/com/hmx/webide/ai/terminal/PRootCommandBuilder.kt
+- core/app/src/main/java/com/hmx/webide/ai/terminal/RuntimeCompatibility.kt
+
+Mobile-Harness is licensed under the MIT License:
+Copyright (c) 2026 Mobile Harness Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+Third-party components used by VibeIDE's native runtime:
+
+1. PRoot (termux/proot) - GPL-2.0
+   Source: https://github.com/termux/proot
+   License: core/app/src/main/assets/licenses/proot-GPL-2.0.txt
+
+2. libandroid-shmem (termux/libandroid-shmem) - BSD-3-Clause
+   Source: https://github.com/termux/libandroid-shmem
+   License: core/app/src/main/assets/licenses/libandroid-shmem-BSD-3-Clause.txt
+
+3. talloc (bundled with PRoot) - LGPL-3.0-or-later
+   Source: https://talloc.samba.org/
+   License: core/app/src/main/assets/licenses/talloc-LGPL-3.0-or-later.txt
+
+---
+
+LICENSING NOTE:
+
+The PRoot library (GPL-2.0) is loaded as a shared library (libproot.so) at
+runtime via System.loadLibrary(). The VibeIDE application code (MIT/GPL-3.0)
+dynamically links to PRoot. This is generally considered a separate work
+under the GPL, but legal review is recommended for production distribution.
+
+The talloc library (LGPL-3.0) is also dynamically linked as a shared library.
+
+The libandroid-shmem library (BSD-3-Clause) is dynamically linked.
+
+All third-party licenses are preserved in core/app/src/main/assets/licenses/.
